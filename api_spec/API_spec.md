@@ -88,7 +88,7 @@ Header versioning complements `/api/v1/...`.
 * `GET /health` 
 
 ### Test Analysis Pipeline
-* `POST /test-analysis-recommendation` 
+* `POST /api/v1/test-analysis-recommendation` 
 ---
 
 ## 1) Health Endpoints
@@ -108,7 +108,7 @@ Header versioning complements `/api/v1/...`.
 
 ## 2) Run Test Analysis & Course Recommendation (REST)
 
-### POST /api/v1/test-analyses
+### POST /api/v1/test-analysis-recommendation
 
 Runs the entire Vertex-AI-powered agent pipeline:
 
@@ -122,15 +122,14 @@ Runs the entire Vertex-AI-powered agent pipeline:
 
 * `200 OK` — pipeline completed successfully (even if some agents produced warnings, e.g., no prior attempts)
 * `400 Bad Request` — request validation or unsupported API version
-* `404 Not Found` — student/test combination missing in data source
+* `404 Not Found` — upstream resource missing (student_id, test_id, question_id, answer_id)
 * `409 Conflict` — duplicate request detected while a prior run with the same correlation ID is still in-flight
-* `422 Unprocessable Entity` — pipeline could not proceed because there were no incorrect answers or no weaknesses
 * `500 Internal Server Error` — unexpected agent failure
 * `502 Bad Gateway` — upstream dependencies (Vertex Matching Engine, Gemini) unavailable
 
 ### Request Schema
 
-✅ Accepts both camelCase and snake_case keys (service normalizes to snake internally).
+Accepts both camelCase and snake_case keys (service normalizes to snake internally).
 
 #### Example (snake_case)
 
@@ -207,7 +206,7 @@ Body (camelCase):
     }
   ],
   "userFacingResponse": {
-    "summary": {  #summary to paragraph output
+    "summary": {  //final response be adjusted to be this part only
       "Test Name": "Computer Science 101"
       "Current Performance": "You handle most reasoning items well but lose accuracy when multi-step percentage conversions appear.",
       "Area to be Improved": "Focus on translating narrative discount problems into structured steps before computing results.",
@@ -300,7 +299,7 @@ Body (camelCase):
 }
 ```
 
-### Curl Example (Local)
+### Curl Example
 
 ```bash
 curl -X 'POST' \
@@ -345,17 +344,11 @@ Response headers always echo:
 * `X-Correlation-Id`
 * `X-API-Version`
 
-### 3.1 Validation Errors — `400 VALIDATION_FAILED`
-
-* Missing `testId` / `studentId`
-* `maxCourses` outside 1–10
-* Unsupported JSON type
-
-### 3.2 Matching Engine Failure — `502 MATCHING_ENGINE_UNAVAILABLE`
+### 3.1 Matching Engine Failure — `502 MATCHING_ENGINE_UNAVAILABLE`
 
 Agent 4 could not reach the deployed Vertex endpoint (`find_neighbors` threw an exception). The service returns weaknesses but no recommendations.
 
-### 3.3 Internal Server Error — `500 INTERNAL_SERVER_ERROR`
+### 3.2 Internal Server Error — `500 INTERNAL_SERVER_ERROR`
 
 Thrown for unexpected exceptions (e.g., Gemini quota, data read failure). Logs include per-agent telemetry for debugging.
 
