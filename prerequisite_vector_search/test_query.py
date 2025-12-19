@@ -24,11 +24,7 @@ from config import (
     EMBEDDING_DIMENSION,
     EMBEDDING_MODEL_NAME,
 )
-
-from dotenv import load_dotenv
-load_dotenv()  # reads .env into environment
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-
+# Initialize Vertex AI and GenAI client
 vertexai.init(project=DEFAULT_PROJECT_ID, location=DEFAULT_LOCATION)
 aiplatform.init(project=DEFAULT_PROJECT_ID, location=DEFAULT_LOCATION)
 genai_client = genai.Client()
@@ -155,6 +151,14 @@ def load_course_texts(csv_path: Path) -> Dict[str, str]:
 # MAIN EXECUTION
 # ---------------------------
 if __name__ == "__main__":
+    endpoints = aiplatform.MatchingEngineIndexEndpoint.list()
+    for ep in endpoints:
+        print("Display Name: ", ep.display_name)
+        if ep.display_name == "Courses Endpoint":
+            print("Resource Name: ", ep.resource_name)
+    
+
+
     endpoint_name = "projects/810737581373/locations/asia-southeast1/indexEndpoints/5097450255578824704"
     index_name = "projects/810737581373/locations/asia-southeast1/indexes/3402319984897032192"
     try:

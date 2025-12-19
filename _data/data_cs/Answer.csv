@@ -1,0 +1,81 @@
+id,isCorrect,value,order,createdAt,questionId
+1,False,2,1,2025-12-08T00:00:00Z,1
+2,False,4,2,2025-12-08T00:00:00Z,1
+3,True,6,3,2025-12-08T00:00:00Z,1
+4,False,8,4,2025-12-08T00:00:00Z,1
+5,False,2,1,2025-12-08T00:00:00Z,2
+6,True,3,2,2025-12-08T00:00:00Z,2
+7,False,4,3,2025-12-08T00:00:00Z,2
+8,False,5,4,2025-12-08T00:00:00Z,2
+9,False,ab,1,2025-12-08T00:00:00Z,3
+10,True,bd,2,2025-12-08T00:00:00Z,3
+11,False,bdf,3,2025-12-08T00:00:00Z,3
+12,False,ace,4,2025-12-08T00:00:00Z,3
+13,False,2,1,2025-12-08T00:00:00Z,4
+14,False,3,2,2025-12-08T00:00:00Z,4
+15,True,4,3,2025-12-08T00:00:00Z,4
+16,False,5,4,2025-12-08T00:00:00Z,4
+17,False,True True,1,2025-12-08T00:00:00Z,5
+18,True,True False,2,2025-12-08T00:00:00Z,5
+19,False,False True,3,2025-12-08T00:00:00Z,5
+20,False,False False,4,2025-12-08T00:00:00Z,5
+21,False,-12,1,2025-12-08T00:00:00Z,6
+22,False,-2,2,2025-12-08T00:00:00Z,6
+23,False,2,3,2025-12-08T00:00:00Z,6
+24,True,12,4,2025-12-08T00:00:00Z,6
+25,False,(x − 1)(x − 6),1,2025-12-08T00:00:00Z,7
+26,True,(x − 2)(x − 3),2,2025-12-08T00:00:00Z,7
+27,False,(x + 2)(x + 3),3,2025-12-08T00:00:00Z,7
+28,False,(x + 1)(x + 6),4,2025-12-08T00:00:00Z,7
+29,False,All real numbers,1,2025-12-08T00:00:00Z,8
+30,False,x > 2,2,2025-12-08T00:00:00Z,8
+31,True,x ≥ 2,3,2025-12-08T00:00:00Z,8
+32,False,x ≤ 2,4,2025-12-08T00:00:00Z,8
+33,True,-9,1,2025-12-08T00:00:00Z,9
+34,False,-3,2,2025-12-08T00:00:00Z,9
+35,False,3,3,2025-12-08T00:00:00Z,9
+36,False,9,4,2025-12-08T00:00:00Z,9
+37,False,Arithmetic sequence with common difference 2,1,2025-12-08T00:00:00Z,10
+38,True,Arithmetic sequence with common difference 3,2,2025-12-08T00:00:00Z,10
+39,False,Geometric sequence with ratio 2,3,2025-12-08T00:00:00Z,10
+40,False,Geometric sequence with ratio 3,4,2025-12-08T00:00:00Z,10
+41,False,"SELECT COUNT(*) FROM orders;",1,2025-12-08T00:00:00Z,11
+42,True,"SELECT customer_id, COUNT(*) AS order_count FROM orders GROUP BY customer_id;",2,2025-12-08T00:00:00Z,11
+43,False,"SELECT DISTINCT customer_id FROM orders;",3,2025-12-08T00:00:00Z,11
+44,False,"SELECT customer_id FROM orders GROUP BY customer_id;",4,2025-12-08T00:00:00Z,11
+45,False,INNER JOIN,1,2025-12-08T00:00:00Z,12
+46,True,LEFT JOIN,2,2025-12-08T00:00:00Z,12
+47,False,RIGHT JOIN,3,2025-12-08T00:00:00Z,12
+48,False,CROSS JOIN,4,2025-12-08T00:00:00Z,12
+49,False,"WHERE order_date > '2025-01-01'",1,2025-12-08T00:00:00Z,13
+50,True,"WHERE order_date >= '2025-01-01'",2,2025-12-08T00:00:00Z,13
+51,False,"WHERE order_date <= '2025-01-01'",3,2025-12-08T00:00:00Z,13
+52,False,"WHERE order_date = '2025-01-01'",4,2025-12-08T00:00:00Z,13
+53,False,They are always identical,1,2025-12-08T00:00:00Z,14
+54,False,"COUNT(*) ignores NULLs; COUNT(column_name) counts NULLs",2,2025-12-08T00:00:00Z,14
+55,True,"COUNT(*) counts all rows; COUNT(column_name) ignores NULLs",3,2025-12-08T00:00:00Z,14
+56,False,COUNT(*) counts only distinct values,4,2025-12-08T00:00:00Z,14
+57,False,SUM(amount),1,2025-12-08T00:00:00Z,15
+58,False,SUM(amount) OVER (PARTITION BY amount),2,2025-12-08T00:00:00Z,15
+59,True,SUM(amount) OVER (ORDER BY order_date),3,2025-12-08T00:00:00Z,15
+60,False,SUM(amount) GROUP BY order_date,4,2025-12-08T00:00:00Z,15
+61,False,Line chart,1,2025-12-08T00:00:00Z,16
+62,True,Histogram,2,2025-12-08T00:00:00Z,16
+63,False,Pie chart,3,2025-12-08T00:00:00Z,16
+64,False,Stacked bar chart,4,2025-12-08T00:00:00Z,16
+65,False,The top whisker,1,2025-12-08T00:00:00Z,17
+66,False,The bottom whisker,2,2025-12-08T00:00:00Z,17
+67,True,The line inside the box,3,2025-12-08T00:00:00Z,17
+68,False,The edges of the box,4,2025-12-08T00:00:00Z,17
+69,False,There is no relationship between the variables,1,2025-12-08T00:00:00Z,18
+70,False,There is a negative correlation between the variables,2,2025-12-08T00:00:00Z,18
+71,True,There is a positive correlation between the variables,3,2025-12-08T00:00:00Z,18
+72,False,The variables are both constant,4,2025-12-08T00:00:00Z,18
+73,False,Bar chart,1,2025-12-08T00:00:00Z,19
+74,False,Line chart,2,2025-12-08T00:00:00Z,19
+75,True,Pie chart,3,2025-12-08T00:00:00Z,19
+76,False,Histogram,4,2025-12-08T00:00:00Z,19
+77,False,Use only red and green to emphasize differences,1,2025-12-08T00:00:00Z,20
+78,False,Use many very similar shades of the same color,2,2025-12-08T00:00:00Z,20
+79,True,Use patterns or a colorblind-safe palette instead of only red and green,3,2025-12-08T00:00:00Z,20
+80,False,Remove labels to simplify the chart,4,2025-12-08T00:00:00Z,20

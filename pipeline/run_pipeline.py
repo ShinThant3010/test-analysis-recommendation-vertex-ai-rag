@@ -1,5 +1,7 @@
 # pipeline/run_pipeline.py
 import os
+import time
+from functools import wraps
 import sys
 import json
 from typing import Dict, Any
@@ -29,18 +31,32 @@ from config import (
     MAX_COURSES,
 )
 
+def log_call(func):
+    """Decorator that reports runtime for each function."""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        print(f"[Runtime] Calling {func.__name__}")
+        try:
+            return func(*args, **kwargs)
+        finally:
+            elapsed = time.perf_counter() - start
+            print(f"[Runtime] {func.__name__} finished in {elapsed:.2f}s")
+    return wrapper
+
+
 # --------------------------------------------------------------------
 # Full Pipeline
 # --------------------------------------------------------------------
+@log_call
 def run_full_pipeline(
     test_id: int,
     student_id: int,
     max_courses: int = 5,
-    persist_directory: str = PERSIST_DIRECTORY,
-    collection_name: str = COURSE_COLLECTION_NAME,
 ) -> Dict[str, Any]:
 
     # ---------------- Agent 1 ----------------
+    t_agent1 = time.perf_counter()
     agent1_out = get_student_test_history(
         test_id=test_id,
         student_id=student_id,
@@ -53,9 +69,10 @@ def run_full_pipeline(
             "agent1_output": agent1_out,
             "message": "No current test for this student/test_id.",
         }
-    print("Agent 1 completed successfully.")
+    print(f"Agent 1 completed successfully in {time.perf_counter() - t_agent1:.2f}s")
 
     # ---------------- Agent 2 ----------------
+    t_agent2 = time.perf_counter()
     agent2_out = get_incorrect_question_cases(
         agent1_out,
         question_path=QUESTION_PATH,
@@ -78,9 +95,10 @@ def run_full_pipeline(
             "agent1_output": agent1_out,
             "agent2_output": agent2_out,
         }
-    print("Agent 2 completed successfully.")
+    print(f"Agent 2 completed successfully in {time.perf_counter() - t_agent2:.2f}s")
 
     # ---------------- Agent 3 ----------------
+    t_agent3 = time.perf_counter()
     weaknesses_llm = extract_weaknesses_and_patterns(incorrect_cases)
     if not weaknesses_llm:
         return {
@@ -88,24 +106,25 @@ def run_full_pipeline(
             "agent1_output": agent1_out,
             "agent2_output": agent2_out,
             "weaknesses_raw": [],
-        }
-    print("Agent 3 - weakness extraction completed.")    
-    print(weaknesses_llm)
+        }  
+    print(f"Agent 3:WeaknessExtraction completed successfully in {time.perf_counter() - t_agent3:.2f}s")
 
+    # ---------------- Agent 4 ----------------
+    t_agent4 = time.perf_counter()
     course_rec_output = None
     try:
         print("Agent 4 – vector search recommendation...")
         course_rec_output = recommend_courses_for_student(
             weaknesses_raw=weaknesses_llm,
             max_courses_pr_weakness=max_courses,
-            persist_directory=persist_directory,
-            collection_name=collection_name,
         )
-        print("Agent 4 completed vector search.")
+        print(f"Agent 4 completed vector search successfully in {time.perf_counter() - t_agent4:.2f}s")
     except Exception as e:
+        print(e)
         print(f"[WARN] Vector search failed: {e}")
 
     # ---------------- Agent 5 ----------------
+    t_agent5 = time.perf_counter()
     if not course_rec_output or not course_rec_output.get("recommendations"):
         print("[WARN] No course recommendations available for LLM summary.")
         return {
@@ -122,6 +141,7 @@ def run_full_pipeline(
         weaknesses=weaknesses,
         recommendations=recommendations,
     )
+    print(f"Agent 5 completed successfully in {time.perf_counter() - t_agent5:.2f}s")
 
     return {
         "status": "ok",
@@ -142,8 +162,6 @@ if __name__ == "__main__":
         test_id=TEST_ID,
         student_id=STUDENT_ID,
         max_courses=MAX_COURSES,
-        persist_directory=PERSIST_DIRECTORY,
-        collection_name="courses",
     )
 
     print(result)

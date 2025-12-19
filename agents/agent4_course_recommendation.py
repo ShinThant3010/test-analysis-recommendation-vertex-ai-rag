@@ -1,20 +1,67 @@
 # agents/agent4_course_recommendation.py
 
-from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple
+from __future__ import annotations
+
+import csv
 import uuid
-import chromadb
+from typing import Any, Dict, List
+
+from google.cloud import aiplatform
+from google.cloud.aiplatform import MatchingEngineIndexEndpoint
+import vertexai
+from google import genai
+from google.genai.types import EmbedContentConfig
+
 
 from config import (
-    PERSIST_DIRECTORY, 
-    COURSE_COLLECTION_NAME,
+    COURSE_CSV_PATH,
+    DEFAULT_LOCATION,
+    DEFAULT_PROJECT_ID,
+    DEPLOYED_INDEX_ID,
+    INDEX_ENDPOINT_NAME,
+    ENDPOINT_DISPLAY_NAME,
+    EMBEDDING_MODEL_NAME,
+    EMBEDDING_DIMENSION,
     Course,
     Weakness,
     CourseScore,
 )
-from agents.gemini_embeddings import get_gemini_embedding_function
 
-# ====== 2) ONLINE PATH: query only, no upsert ======
+# Initialize Vertex AI and GenAI client
+vertexai.init(project=DEFAULT_PROJECT_ID, location=DEFAULT_LOCATION)
+aiplatform.init(project=DEFAULT_PROJECT_ID, location=DEFAULT_LOCATION)
+genai_client = genai.Client()
+
+def embed_texts(texts: List[str], dim: int = EMBEDDING_DIMENSION) -> List[List[float]]:
+    """Embed texts in batches to respect 100-request limit."""
+    batch_size = 100
+    all_vectors: List[List[float]] = []
+    for start in range(0, len(texts), batch_size):
+        batch = texts[start:start + batch_size]
+        resp = genai_client.models.embed_content(
+            model=EMBEDDING_MODEL_NAME,
+            contents=batch,
+            config=EmbedContentConfig(
+                task_type="RETRIEVAL_DOCUMENT",
+                output_dimensionality=dim
+            ),
+        )
+        all_vectors.extend([e.values for e in resp.embeddings])
+    return all_vectors
+
+def _load_course_lookup() -> Dict[str, Dict[str, Any]]:
+    if not COURSE_CSV_PATH.exists():
+        raise FileNotFoundError(f"Course CSV not found at {COURSE_CSV_PATH}")
+
+    course_lookup: Dict[str, Dict[str, Any]] = {}
+    with COURSE_CSV_PATH.open("r", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle)
+        for row in reader:
+            course_id = row.get("id")
+            if not course_id:
+                continue
+            course_lookup[course_id] = row
+    return course_lookup
 
 def _parse_weaknesses(weaknesses_raw: List[Dict[str, Any]]) -> List[Weakness]:
     weaknesses: List[Weakness] = []
@@ -23,71 +70,66 @@ def _parse_weaknesses(weaknesses_raw: List[Dict[str, Any]]) -> List[Weakness]:
         text = w["weakness"]
         importance = float(w.get("importance", 1.0))
         meta = {k: v for k, v in w.items() if k not in ["id", "text", "importance"]} # will be pattern, description, questions, freq
-        weaknesses.append(
-            Weakness(id=w_id, text=text, importance=importance, metadata=meta)
-        )
+        weaknesses.append(Weakness(id=w_id, text=text, importance=importance, metadata=meta))
     return weaknesses
 
+def _query_vertex_index(query_text: str, limit: int) -> List[Any]:
+    endpoints = aiplatform.MatchingEngineIndexEndpoint.list()
+    endpoint_name = ""
+    for ep in endpoints:
+        if ep.display_name == ENDPOINT_DISPLAY_NAME:
+            endpoint_name = ep.resource_name
 
-def _get_course_collection(
-    persist_directory: str = PERSIST_DIRECTORY,
-    collection_name: str = COURSE_COLLECTION_NAME,
-):
-    client = chromadb.PersistentClient(path=persist_directory)
-    # Important: DO NOT upsert here, just attach to existing index
-    collection = client.get_collection(
-        name=collection_name,
-        embedding_function=get_gemini_embedding_function(),
+    if not endpoint_name:
+        raise ValueError(f"Matching Engine endpoint with display name '{ENDPOINT_DISPLAY_NAME}' not found.")    
+        return []
+    
+    endpoint = MatchingEngineIndexEndpoint(index_endpoint_name=endpoint_name)
+    query_vector = embed_texts([query_text])[0]
+
+    print(query_vector[:10])  # Print first 10 dimensions for debugging
+    neighbors = endpoint.find_neighbors(
+        deployed_index_id=DEPLOYED_INDEX_ID,
+        queries=[query_vector],
+        num_neighbors=limit,
+        return_full_datapoint=False,
     )
-    return collection
-
+    return neighbors[0] if neighbors else []
 
 def recommend_courses_for_student(
     weaknesses_raw: List[Dict[str, Any]],
     max_courses_pr_weakness: int = 5,
-    persist_directory: str = PERSIST_DIRECTORY,
-    collection_name: str = COURSE_COLLECTION_NAME,
 ) -> Dict[str, Any]:
     """
     Fast online path:
-    - assumes course index already built with build_course_index()
-    - only queries Chroma; no upsert here
+    - assumes Vertex Matching Engine index is already deployed
+    - embeds each weakness and queries deployed endpoint for nearest courses
     """
 
     weaknesses = _parse_weaknesses(weaknesses_raw)
-
-    collection = _get_course_collection(
-        persist_directory=persist_directory,
-        collection_name=collection_name,
-    )
+    course_lookup = _load_course_lookup()
 
     all_recommendations: List[CourseScore] = []
 
     for w in weaknesses:
         print(f"Querying courses for weakness: {w.id} - {w.text[:60]}...")
-        result = collection.query(
-            query_texts=[w.text],
-            n_results=max_courses_pr_weakness,
-        )
+        neighbors = _query_vertex_index(w.text, max_courses_pr_weakness)
 
-        # Chroma returns: ids, distances, documents, metadatas
-        ids_list = result.get("ids", [[]])[0]
-        distances = result.get("distances", [[]])[0]  # or "scores" depending on version
-        metadatas_list = result.get("metadatas", [[]])[0]
-
-        for cid, d, meta in zip(ids_list, distances, metadatas_list):
-            lesson_title = meta.get("lesson_title") or "Untitled course"
-            desc = meta.get("description") or ""
-            link = meta.get("link") or ""
+        for neighbor in neighbors:
+            course_id = str(neighbor.id)
+            metadata = course_lookup.get(course_id, {})
+            lesson_title = metadata.get("lesson_title") or "Untitled course"
+            desc = metadata.get("description") or ""
+            link = metadata.get("link") or metadata.get("course_url") or ""
             course = Course(
-                id=str(cid),
+                id=course_id,
                 lesson_title=lesson_title,
                 description=desc,
                 link=link,
-                metadata=meta,
+                metadata=metadata,
             )
-            # Convert distance -> similarity (lower distance = higher similarity)
-            score = 1 / (1 + float(d))
+            distance = float(getattr(neighbor, "distance", 0.0) or 0.0)
+            score = 1 / (1 + distance)
             reason = f"Retrieved by semantic match to weakness '{w.text[:80]}...'."
 
             all_recommendations.append(
