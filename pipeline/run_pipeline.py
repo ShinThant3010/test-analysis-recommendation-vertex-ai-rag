@@ -50,8 +50,8 @@ def log_call(func):
 # --------------------------------------------------------------------
 @log_call
 def run_full_pipeline(
-    test_id: int,
-    student_id: int,
+    test_id: str,
+    student_id: str,
     max_courses: int = 5,
 ) -> Dict[str, Any]:
 
