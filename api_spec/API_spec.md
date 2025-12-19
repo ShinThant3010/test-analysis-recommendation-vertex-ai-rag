@@ -1,4 +1,4 @@
-# Test Analysis & Recommendation API — REST API Specification
+# Test Analysis & Recommendation API
 
 Service: **test_analysis_recommendation_api (BFF)**
 
