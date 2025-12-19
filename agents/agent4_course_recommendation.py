@@ -82,18 +82,15 @@ def _query_vertex_index(query_text: str, limit: int) -> List[Any]:
 
     if not endpoint_name:
         raise ValueError(f"Matching Engine endpoint with display name '{ENDPOINT_DISPLAY_NAME}' not found.")    
-        return []
-    
-    endpoint = MatchingEngineIndexEndpoint(index_endpoint_name=endpoint_name)
-    query_vector = embed_texts([query_text])[0]
-
-    print(query_vector[:10])  # Print first 10 dimensions for debugging
-    neighbors = endpoint.find_neighbors(
-        deployed_index_id=DEPLOYED_INDEX_ID,
-        queries=[query_vector],
-        num_neighbors=limit,
-        return_full_datapoint=False,
-    )
+    else:
+        endpoint = MatchingEngineIndexEndpoint(index_endpoint_name=endpoint_name)
+        query_vector = embed_texts([query_text])[0]
+        neighbors = endpoint.find_neighbors(
+            deployed_index_id=DEPLOYED_INDEX_ID,
+            queries=[query_vector],
+            num_neighbors=limit,
+            return_full_datapoint=False,
+        )
     return neighbors[0] if neighbors else []
 
 def recommend_courses_for_student(
