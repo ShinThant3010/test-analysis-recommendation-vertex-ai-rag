@@ -206,7 +206,7 @@ Body (camelCase):
     }
   ],
   "userFacingResponse": {
-    "summary": {  //final response be adjusted to be this part only
+    "summary": {  -- final response will be adjusted to be this part (only)
       "Test Name": "Computer Science 101"
       "Current Performance": "You handle most reasoning items well but lose accuracy when multi-step percentage conversions appear.",
       "Area to be Improved": "Focus on translating narrative discount problems into structured steps before computing results.",
