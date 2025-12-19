@@ -85,10 +85,10 @@ Header versioning complements `/api/v1/...`.
 ## Endpoints Summary
 
 ### Health
-* `GET /health` ✅ canonical
+* `GET /health` 
 
 ### Test Analysis Pipeline
-* `POST /api/v1/test-analyses` ✅ synchronous, returns pipeline output
+* `POST /test-analysis-recommendation` 
 ---
 
 ## 1) Health Endpoints
@@ -113,7 +113,7 @@ Header versioning complements `/api/v1/...`.
 Runs the entire Vertex-AI-powered agent pipeline:
 
 1. **Agent 1 – Test Context**: validates `(testId, studentId)` against ExamResult data and surfaces current + historical attempts.
-2. **Agent 2 – Incorrect Questions**: joins question/answer CSVs to extract only incorrect items for the current attempt.
+2. **Agent 2 – Incorrect Questions**: joins question/answer data to extract only incorrect items for the current attempt.
 3. **Agent 3 – Weakness Extraction**: Gemini 2.5 Flash summarizes reusable weaknesses & patterns from incorrect cases.
 4. **Agent 4 – Course Recommendation**: embeds weaknesses + queries the deployed Matching Engine index (`courses-endpoint`) to retrieve candidate courses.
 5. **Agent 5 – User-Facing Response**: Gemini 2.5 Flash composes a concise JSON summary plus narrative recommendations for the learner.
@@ -373,11 +373,7 @@ Thrown for unexpected exceptions (e.g., Gemini quota, data read failure). Logs i
 * `no_course_recommendations` — Agent 4 produced no neighbors
 * `agent5_error` — Gemini summary failure (LLM fallback still returns 200 with `userFacingResponse.summary` derived from `_fallback_summary`)
 
-### 4.2 `course.metadata`
-
-Key-value pairs directly from `_data/courses/course.csv`. Common keys include `lesson_title`, `short_description`, `description`, `link`, `duration_hours`, `tags`.
-
-### 4.3 Token Logging
+### 4.2 Token Logging
 
 `metadata.tokens` mirrors entries stored in `token_log.json`:
 
