@@ -1,4 +1,4 @@
-# Test Result Analysis & Course Recommendation API Spec
+# Test Result Analysis & Course Recommendation API (REST API Spec)
 
 Service: **test_analysis_recommendation_api (BFF)**
 
