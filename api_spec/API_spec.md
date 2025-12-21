@@ -35,9 +35,9 @@ This API analyzes a student’s test results, identifies learning weaknesses usi
 * ✅ **HTTP methods:** `GET` for health, `POST` for synchronous analysis runs
 * ✅ **HTTP status codes:** `200 OK` success, `4xx` validation/not-found, `5xx` pipeline errors
 * ✅ **Error format:** `{code,message,subErrors,timestamp,correlationId}`
-* ✅ **Correlation ID:** `X-Correlation-Id` passthrough + auto-generation
-* ✅ **API Version header:** `X-API-Version` (default `1`)
-* ✅ **JSON naming:** responses are **camelCase**; requests accept camelCase **and** snake_case
+* [TBD] **Correlation ID:** `X-Correlation-Id` passthrough + auto-generation
+* [TBD] **API Version header:** `X-API-Version` (default `1`)
+* [TBD] **JSON naming:** responses are **camelCase**; requests accept camelCase **and** snake_case
 * ✅ **Idempotent inputs:** pipeline deduplicates by `(testId, studentId)` while still treating each request as a fresh run
 
 ---
