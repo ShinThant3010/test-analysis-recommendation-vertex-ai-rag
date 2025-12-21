@@ -2,7 +2,14 @@
 
 Service: **test_analysis_recommendation_api (BFF)**
 
-Purpose: This API analyzes a student’s test results, identifies learning weaknesses using LLM-based analysis, and recommends relevant courses via vector search.
+**1. Purpose**
+This API analyzes a student’s test results, identifies learning weaknesses using LLM-based analysis, and recommends relevant courses via vector search.
+
+**2. High-Level Flow**
+1. validated test context,
+2. LLM-derived weakness clusters,
+3. Vertex AI Matching Engine course recommendations, and
+4. a concise user-facing summary.
 
 ---
 
