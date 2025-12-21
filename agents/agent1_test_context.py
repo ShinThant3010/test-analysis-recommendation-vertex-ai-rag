@@ -7,7 +7,8 @@ from config import TEST_RESULT_PATH
 # Columns for Agent 1 output
 CORE_COLS = [
     "id",
-    "examContentId",
+    "testId",
+    "testTitle",
     "userId",
     "attemptNumber",
     "totalAttempts",
@@ -17,7 +18,6 @@ CORE_COLS = [
     "status",
     "createdAt",
 ]
-
 
 def _serialize_record(record: Dict[str, Any]) -> Dict[str, Any]:
     """Convert non-JSON types (e.g., Timestamp) to safe values."""
@@ -69,7 +69,7 @@ def get_student_test_history(
 
     # Filter by student + test
     # df_student_test = df_student[df_student["id"] == test_id].copy()
-    df_student_test = df_student[df_student["examContentId"] == test_id].copy()
+    df_student_test = df_student[df_student["testId"] == test_id].copy()
     if df_student_test.empty:
         result["status"] = "no_current_test"
         result["notes"].append("Student has test history, but not for this test_id.")

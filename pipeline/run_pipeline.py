@@ -24,8 +24,6 @@ from config import (
     TQ_PATH,
     TA_PATH,
     TEST_RESULT_PATH,
-    COURSE_COLLECTION_NAME,
-    PERSIST_DIRECTORY,
     TEST_ID, 
     STUDENT_ID,
     MAX_COURSES,

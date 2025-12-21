@@ -1,2 +1,2 @@
-id,userId,examContentId,attemptNumber,totalAttempts,durationTakenMs,earnedScore,totalScore,status,createdAt
-HEM3E2MSH4DMDZSX9G8FGVSQE8,E1CTEWH0AVNH9DN65R6PPG2X7R,5JQC42EJ5E6RHXQAQPDH4AFAXR,1,1,2520000,16,20,pass,2024-07-10T15:54:03
+id,userId,testId,testTitle,attemptNumber,totalAttempts,durationTakenMs,earnedScore,totalScore,status,createdAt
+HEM3E2MSH4DMDZSX9G8FGVSQE8,E1CTEWH0AVNH9DN65R6PPG2X7R,5JQC42EJ5E6RHXQAQPDH4AFAXR,"Computer Science Quiz",1,1,2520000,16,20,pass,2024-07-10T15:54:03

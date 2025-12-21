@@ -1,8 +1,11 @@
-# Test Analysis & Recommendation API — REST API Specification
+# Test Result Analysis & Course Recommendation API (REST API Spec)
 
 Service: **test_analysis_recommendation_api (BFF)**
 
-Purpose: Run the multi-agent test-analysis pipeline end-to-end so that downstream clients receive:
+**1. Purpose**
+This API analyzes a student’s test results, identifies learning weaknesses using LLM-based analysis, and recommends relevant courses via vector search.
+
+**2. High-Level Flow**
 1. validated test context,
 2. LLM-derived weakness clusters,
 3. Vertex AI Matching Engine course recommendations, and
@@ -22,19 +25,19 @@ Purpose: Run the multi-agent test-analysis pipeline end-to-end so that downstrea
 `http://127.0.0.1:8000`
 
 **Swagger / OpenAPI:**
-`<base-url>/docs` (FastAPI auto-generated once `main.py` exposes the router)
+`https://test-analysis-recommendation-service-810737581373.asia-southeast1.run.app/docs`
 
 ---
 
 ## Guideline Alignment Notes
 
-* ✅ **Resource-based URL:** canonical noun is `/api/v1/test-analyses`
+* ✅ **Resource-based URL:** canonical noun is `/api/v1/test-analysis-recommendation`
 * ✅ **HTTP methods:** `GET` for health, `POST` for synchronous analysis runs
 * ✅ **HTTP status codes:** `200 OK` success, `4xx` validation/not-found, `5xx` pipeline errors
 * ✅ **Error format:** `{code,message,subErrors,timestamp,correlationId}`
-* ✅ **Correlation ID:** `X-Correlation-Id` passthrough + auto-generation
-* ✅ **API Version header:** `X-API-Version` (default `1`)
-* ✅ **JSON naming:** responses are **camelCase**; requests accept camelCase **and** snake_case
+* [TBD] **Correlation ID:** `X-Correlation-Id` passthrough + auto-generation
+* [TBD] **API Version header:** `X-API-Version` (default `1`)
+* [TBD] **JSON naming:** responses are **camelCase**; requests accept camelCase **and** snake_case
 * ✅ **Idempotent inputs:** pipeline deduplicates by `(testId, studentId)` while still treating each request as a fresh run
 
 ---
@@ -52,7 +55,7 @@ Purpose: Run the multi-agent test-analysis pipeline end-to-end so that downstrea
 `X-API-Key: <internal key>`
 
 ### Recommended Gateway → Upstream Header Mapping
-
+**[In Progress — not implemented yet]**
 * `X-User-Id: <jwt.sub>`
 * `X-User-Name: <jwt.name>`
 * `X-User-Email: <jwt.email>`
@@ -80,25 +83,15 @@ Header versioning complements `/api/v1/...`.
 * Supported values: `1`
 * Invalid version ⇒ `400 INVALID_FIELD_VALUE`
 
-### Optional Metadata Headers
-
-* `X-Request-Source` – UI/app identifier for analytics
-* `X-Dataset-Key` – force the service to load a specific CSV dataset (only used internally; defaults to the dataset configured in `config.py`)
-
 ---
 
 ## Endpoints Summary
 
 ### Health
-* `GET /health` ✅ canonical
+* `GET /health` 
 
 ### Test Analysis Pipeline
-* `POST /api/v1/test-analyses` ✅ synchronous, returns pipeline output
-* `POST /api/v1/test-analyses:dryRun` ⚠️ optional (skips Agents 4–5, returns context + weaknesses; useful for smoke tests)
-
-### Deprecated / Legacy
-* `POST /v1/analyze-test` ⚠️ legacy verb-style URL. Returns same payload but should be phased out after clients migrate.
-
+* `POST /api/v1/test-analysis-recommendation` 
 ---
 
 ## 1) Health Endpoints
@@ -114,21 +107,16 @@ Header versioning complements `/api/v1/...`.
 }
 ```
 
-### GET /healthz ⚠️ optional
-
-* Local-only convenience endpoint (FastAPI auto health)
-* Cloud Run may return `404 Not Found`
-
 ---
 
 ## 2) Run Test Analysis & Course Recommendation (REST)
 
-### POST /api/v1/test-analyses
+### POST /api/v1/test-analysis-recommendation
 
 Runs the entire Vertex-AI-powered agent pipeline:
 
-1. **Agent 1 – Test Context**: validates `(testId, studentId)` against ExamResult.csv (or upstream DB) and surfaces current + historical attempts.
-2. **Agent 2 – Incorrect Questions**: joins question/answer CSVs to extract only incorrect items for the current attempt.
+1. **Agent 1 – Test Context**: validates `(testId, studentId)` against ExamResult data and surfaces current + historical attempts.
+2. **Agent 2 – Incorrect Questions**: joins question/answer data to extract only incorrect items for the current attempt.
 3. **Agent 3 – Weakness Extraction**: Gemini 2.5 Flash summarizes reusable weaknesses & patterns from incorrect cases.
 4. **Agent 4 – Course Recommendation**: embeds weaknesses + queries the deployed Matching Engine index (`courses-endpoint`) to retrieve candidate courses.
 5. **Agent 5 – User-Facing Response**: Gemini 2.5 Flash composes a concise JSON summary plus narrative recommendations for the learner.
@@ -137,15 +125,14 @@ Runs the entire Vertex-AI-powered agent pipeline:
 
 * `200 OK` — pipeline completed successfully (even if some agents produced warnings, e.g., no prior attempts)
 * `400 Bad Request` — request validation or unsupported API version
-* `404 Not Found` — student/test combination missing in data source
+* `404 Not Found` — upstream resource missing (student_id, test_id, question_id, answer_id)
 * `409 Conflict` — duplicate request detected while a prior run with the same correlation ID is still in-flight
-* `422 Unprocessable Entity` — pipeline could not proceed because there were no incorrect answers or no weaknesses
 * `500 Internal Server Error` — unexpected agent failure
 * `502 Bad Gateway` — upstream dependencies (Vertex Matching Engine, Gemini) unavailable
 
 ### Request Schema
 
-✅ Accepts both camelCase and snake_case keys (service normalizes to snake internally).
+Accepts both camelCase and snake_case keys (service normalizes to snake internally).
 
 #### Example (snake_case)
 
@@ -153,8 +140,7 @@ Runs the entire Vertex-AI-powered agent pipeline:
 {
   "test_id": "5JQC42EJ5E6RHXQAQPDH4AFAXR",
   "student_id": "E1CTEWH0AVNH9DN65R6PPG2X7R",
-  "max_courses": 5,
-  "dry_run": false
+  "max_courses": 5
 }
 ```
 
@@ -164,8 +150,7 @@ Runs the entire Vertex-AI-powered agent pipeline:
 {
   "testId": "5JQC42EJ5E6RHXQAQPDH4AFAXR",
   "studentId": "E1CTEWH0AVNH9DN65R6PPG2X7R",
-  "maxCourses": 5,
-  "dryRun": false
+  "maxCourses": 5
 }
 ```
 
@@ -176,7 +161,6 @@ Runs the entire Vertex-AI-powered agent pipeline:
 | test_id      | string |        ✅ | Assessment/test identifier (maps to `ExamResult.examContentId`)       |
 | student_id   | string |        ✅ | Learner identifier (maps to `ExamResult.userId`)                      |
 | max_courses  | int    |        ❌ | Total courses to surface in the final list (default `5`, min 1, max 10) |
-| dry_run      | bool   |        ❌ | If `true`, skips Agents 4 & 5 and returns only context + weaknesses   |
 
 ### Successful Response
 
@@ -225,7 +209,8 @@ Body (camelCase):
     }
   ],
   "userFacingResponse": {
-    "summary": {
+    "summary (final response will be adjusted to be this part only)": {  
+      "Test Name": "Computer Science 101"
       "Current Performance": "You handle most reasoning items well but lose accuracy when multi-step percentage conversions appear.",
       "Area to be Improved": "Focus on translating narrative discount problems into structured steps before computing results.",
       "Recommended Course": [
@@ -317,25 +302,18 @@ Body (camelCase):
 }
 ```
 
-### Notes
-
-* `analysisId` is currently derived from `ulid.new()` inside the API layer and is separate from `X-Correlation-Id`.
-* `agentOutputs.agent3.rawWeaknesses` mirrors the exact payload returned by the Gemini model prior to normalization.
-* When `dryRun=true`, `courseRecommendations` and `userFacingResponse` will be empty arrays/objects and the service returns `status: "dry_run"`.
-
-### Curl Example (Local)
+### Curl Example
 
 ```bash
-curl -s -X POST \
-  "http://127.0.0.1:8000/api/v1/test-analyses" \
-  -H "Content-Type: application/json" \
-  -H "X-API-Version: 1" \
-  -H "X-Correlation-Id: corr_demo_123" \
+curl -X 'POST' \
+  'https://test-analysis-recommendation-service-810737581373.asia-southeast1.run.app/test-analysis-recommendation' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
   -d '{
-    "testId": "5JQC42EJ5E6RHXQAQPDH4AFAXR",
-    "studentId": "E1CTEWH0AVNH9DN65R6PPG2X7R",
-    "maxCourses": 5
-  }' | jq .
+  "test_id": "5JQC42EJ5E6RHXQAQPDH4AFAXR",
+  "student_id": "E1CTEWH0AVNH9DN65R6PPG2X7R",
+  "max_courses": 5
+}'
 ```
 
 ---
@@ -369,47 +347,13 @@ Response headers always echo:
 * `X-Correlation-Id`
 * `X-API-Version`
 
-### 3.1 Validation Errors — `400 VALIDATION_FAILED`
-
-* Missing `testId` / `studentId`
-* `maxCourses` outside 1–10
-* Unsupported JSON type
-
-### 3.2 Dataset / Entity Not Found — `404 DATA_NOT_FOUND`
-
-Occurs when Agent 1 cannot find any ExamResult rows for `(testId, studentId)`.
-
-```json
-{
-  "code": "DATA_NOT_FOUND",
-  "message": "Student has no attempts for the provided test.",
-  "subErrors": [
-    {
-      "field": "testId",
-      "errors": [
-        {
-          "code": "notFound",
-          "message": "No examContentId=5JQC42EJ5E6RHXQAQPDH4AFAXR for this student."
-        }
-      ]
-    }
-  ],
-  "timestamp": 1750672014,
-  "correlationId": "corr_..."
-}
-```
-
-### 3.3 No Incorrect Questions — `422 NO_INCORRECT_QUESTIONS`
-
-Agent 2 found zero incorrect answers and the pipeline stops.
-
-### 3.4 Matching Engine Failure — `502 MATCHING_ENGINE_UNAVAILABLE`
+### 3.1 Matching Engine Failure — `502 MATCHING_ENGINE_UNAVAILABLE`
 
 Agent 4 could not reach the deployed Vertex endpoint (`find_neighbors` threw an exception). The service returns weaknesses but no recommendations.
 
-### 3.5 Internal Server Error — `500 INTERNAL_SERVER_ERROR`
+### 3.2 Internal Server Error — `500 INTERNAL_SERVER_ERROR`
 
-Thrown for unexpected exceptions (e.g., Gemini quota, CSV read failure). Logs include per-agent telemetry for debugging.
+Thrown for unexpected exceptions (e.g., Gemini quota, data read failure). Logs include per-agent telemetry for debugging.
 
 ---
 
@@ -418,7 +362,6 @@ Thrown for unexpected exceptions (e.g., Gemini quota, CSV read failure). Logs in
 ### 4.1 `status` (top-level)
 
 * `ok` — full pipeline completed
-* `dry_run` — Agents 1–3 only
 * `agent1_error` — ExamResult lookup failure
 * `agent2_error` — incorrect question extraction failure
 * `no_incorrect_questions` — Agent 2 returned empty set
@@ -426,22 +369,7 @@ Thrown for unexpected exceptions (e.g., Gemini quota, CSV read failure). Logs in
 * `no_course_recommendations` — Agent 4 produced no neighbors
 * `agent5_error` — Gemini summary failure (LLM fallback still returns 200 with `userFacingResponse.summary` derived from `_fallback_summary`)
 
-### 4.2 `patternType`
-
-Provided by Agent 3 prompt:
-* `language`
-* `numeracy`
-* `logical_reasoning`
-* `reading_comprehension`
-* `domain_knowledge`
-* `test_strategy`
-* `other`
-
-### 4.3 `course.metadata`
-
-Key-value pairs directly from `_data/courses/course.csv`. Common keys include `lesson_title`, `short_description`, `description`, `link`, `duration_hours`, `tags`.
-
-### 4.4 Token Logging
+### 4.2 Token Logging
 
 `metadata.tokens` mirrors entries stored in `token_log.json`:
 
@@ -461,7 +389,6 @@ Key-value pairs directly from `_data/courses/course.csv`. Common keys include `l
 
 | Component | Purpose | Notes |
 | --------- | ------- | ----- |
-| `_data/data_*/*.csv` | Prototype data source for tests, questions, answers | Swappable with BigQuery/SQL source later |
 | `vertexai.MatchingEngineIndexEndpoint` | Retrieves courses semantically similar to weaknesses | Uses `INDEX_ENDPOINT_NAME` + `ENDPOINT_DISPLAY_NAME` from `config.py` |
 | `google.genai` (`gemini-2.5-flash`) | Agents 3 & 5 LLM calls | Requires `GOOGLE_API_KEY` |
 | `token_logger.py` | Captures token usage + runtime for observability | Appends to `token_log.json` |
@@ -471,6 +398,6 @@ Key-value pairs directly from `_data/courses/course.csv`. Common keys include `l
 
 ## 6) Change Log
 
-* **2025-01-17**: Initial specification drafted.
+* **2025-01-19**: Initial specification drafted.
 
 ---

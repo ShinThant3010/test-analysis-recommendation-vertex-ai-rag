@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, APIRouter
 from pydantic import BaseModel, Field
 
 from config import (
@@ -26,6 +26,7 @@ app = FastAPI(
     version="0.1.0",
     description="Run the analysis pipeline via HTTP endpoints.",
 )
+router_v1 = APIRouter(prefix="/api/v1", tags=["v1"])
 
 
 @app.get("/health")
@@ -34,8 +35,8 @@ def health() -> Dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/test-analysis-recommendation")
-def run_pipeline(request: PipelineRequest) -> Dict[str, Any]:
+@router_v1.post("/test-analysis-recommendation")
+def run_pipeline_v1(request: PipelineRequest) -> Dict[str, Any]:
     """
     Execute the LLM pipeline using the supplied parameters.
     """
@@ -51,6 +52,9 @@ def run_pipeline(request: PipelineRequest) -> Dict[str, Any]:
             detail=f"Failed to run pipeline: {exc}",
         ) from exc
     return result
+
+
+app.include_router(router_v1)
 
 
 if __name__ == "__main__":

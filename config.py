@@ -12,6 +12,10 @@ load_dotenv()
 MAX_COURSES = 5
 
 # ==== CSV PATHS ====
+# dataset = "_data/exam_result"
+# TEST_ID = "01KCXGG0SS0001H0Q1FW1K4S0G"
+# STUDENT_ID = "STUDENT_A"
+
 dataset = "_data/data_cs"
 TEST_ID = "5JQC42EJ5E6RHXQAQPDH4AFAXR"
 STUDENT_ID = "E1CTEWH0AVNH9DN65R6PPG2X7R"
@@ -33,15 +37,11 @@ ANSWER_PATH   = dataset + "/Answer.csv"
 TQ_PATH       = dataset + "/ExamQuestionResult.csv"
 TA_PATH       = dataset + "/ExamAnswerResult.csv"
 TEST_RESULT_PATH = dataset + "/ExamResult.csv"
-COURSE_PATH      = "_data/course/course.csv"
+COURSE_PATH      = "_data/courses/course.csv"
 TOKEN_LOG_PATH = os.getenv("TOKEN_LOG_PATH", "token_log.json")
 
 # ==== Generation Model ====
 GENERATION_MODEL = "gemini-2.5-flash"
-
-# ==== Chroma defaults (values can be overridden via environment variables) ====
-PERSIST_DIRECTORY = os.getenv("COURSE_CHROMA_DIR", "chroma_courses")
-COURSE_COLLECTION_NAME = os.getenv("COURSE_COLLECTION_NAME", "courses")
 
 # ==== Gemini / Embeddings ====
 API_KEY = os.getenv("GOOGLE_API_KEY")
