@@ -1,12 +1,8 @@
-# Test Analysis & Recommendation API
+# Test Result Analysis & Course Recommendation API Spec
 
 Service: **test_analysis_recommendation_api (BFF)**
 
-Purpose: Run the multi-agent test-analysis pipeline end-to-end so that downstream clients receive:
-1. validated test context,
-2. LLM-derived weakness clusters,
-3. Vertex AI Matching Engine course recommendations, and
-4. a concise user-facing summary.
+Purpose: This API analyzes a student’s test results, identifies learning weaknesses using LLM-based analysis, and recommends relevant courses via vector search.
 
 ---
 
