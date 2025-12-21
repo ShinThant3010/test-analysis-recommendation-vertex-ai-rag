@@ -28,7 +28,7 @@ Purpose: Run the multi-agent test-analysis pipeline end-to-end so that downstrea
 
 ## Guideline Alignment Notes
 
-* ✅ **Resource-based URL:** canonical noun is `/api/v1/test-analyses`
+* ✅ **Resource-based URL:** canonical noun is `/api/v1/test-analysis-recommendation`
 * ✅ **HTTP methods:** `GET` for health, `POST` for synchronous analysis runs
 * ✅ **HTTP status codes:** `200 OK` success, `4xx` validation/not-found, `5xx` pipeline errors
 * ✅ **Error format:** `{code,message,subErrors,timestamp,correlationId}`
