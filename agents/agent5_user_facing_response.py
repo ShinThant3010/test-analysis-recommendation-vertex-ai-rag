@@ -74,6 +74,8 @@ def generate_user_facing_response(
         - The "Recommended Course" array must describe each provided course and how it supports the weaknesses.
         - Do not invent new courses or change their titles.
         """
+    
+    
     # === Call Gemini === #
     response = None
     start = time.time()
