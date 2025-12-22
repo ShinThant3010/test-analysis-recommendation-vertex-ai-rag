@@ -34,6 +34,10 @@ def get_incorrect_question_cases(
         "incorrect_questions": [],
         "total_questions_in_test": 0,
         "total_incorrect_questions": 0,
+        "domain_performance": {
+            "current": None,
+            "history": None,
+        },
         "notes": [],
     }
 
@@ -79,6 +83,25 @@ def get_incorrect_question_cases(
             "No test_answer_result rows found for the current test_result (no answers logged)."
         )
         return result
+
+    # Domain performance for current attempt
+    result["domain_performance"]["current"] = _build_domain_performance(
+        df_tq_subset=df_tq_current,
+        df_ta=df_ta,
+        df_q=df_q,
+    )
+
+    # Domain performance for previous attempt (if available)
+    history = agent1_output.get("history_test_result")
+    if history and history.get("id"):
+        history_id = history["id"]
+        df_tq_history = df_tq[df_tq["examResultId"] == history_id].copy()
+        if not df_tq_history.empty:
+            result["domain_performance"]["history"] = _build_domain_performance(
+                df_tq_subset=df_tq_history,
+                df_ta=df_ta,
+                df_q=df_q,
+            )
 
     #Aggregate per-question to catch any incorrect attempts & keep all answers of that question
     agg = (
@@ -154,3 +177,74 @@ def get_incorrect_question_cases(
         )
 
     return result
+
+
+def _build_domain_performance(
+    df_tq_subset: pd.DataFrame,
+    df_ta: pd.DataFrame,
+    df_q: pd.DataFrame,
+) -> Dict[str, Any]:
+    """
+    Compute per-domain accuracy for a given exam attempt.
+    """
+    if df_tq_subset.empty:
+        return None
+
+    df_ta_subset = df_ta[
+        df_ta["examResultQuestionId"].isin(df_tq_subset["id"])
+    ].copy()
+    if df_ta_subset.empty:
+        return None
+
+    agg = (
+        df_ta_subset.groupby("examResultQuestionId")
+        .agg(any_incorrect=("isCorrect", lambda s: (~s.astype(bool)).any()))
+        .reset_index()
+    )
+
+    df_join = df_tq_subset.merge(
+        agg,
+        left_on="id",
+        right_on="examResultQuestionId",
+        how="left",
+    ).merge(
+        df_q[["id", "domain"]],
+        left_on="questionId",
+        right_on="id",
+        how="left",
+        suffixes=("", "_q"),
+    )
+
+    df_join["is_correct"] = ~(df_join["any_incorrect"].fillna(True))
+    df_join["domain"] = df_join["domain"].fillna("Unknown")
+
+    domain_rows = []
+    total_correct = 0
+    total_questions = 0
+    for domain, grp in df_join.groupby("domain"):
+        total = len(grp)
+        correct = int(grp["is_correct"].sum())
+        incorrect = total - correct
+        accuracy = correct / total if total else None
+        domain_rows.append(
+            {
+                "domain": domain,
+                "total": total,
+                "correct": correct,
+                "incorrect": incorrect,
+                "accuracy": accuracy,
+            }
+        )
+        total_questions += total
+        total_correct += correct
+
+    overall_accuracy = total_correct / total_questions if total_questions else None
+    return {
+        "domains": domain_rows,
+        "overall": {
+            "total": total_questions,
+            "correct": total_correct,
+            "incorrect": total_questions - total_correct,
+            "accuracy": overall_accuracy,
+        },
+    }

@@ -51,6 +51,7 @@ def run_full_pipeline(
     test_id: str,
     student_id: str,
     max_courses: int = 5,
+    participant_ranking: float | None = None,
 ) -> Dict[str, Any]:
 
     # ---------------- Agent 1 ----------------
@@ -87,43 +88,42 @@ def run_full_pipeline(
         }
 
     incorrect_cases = agent2_out["incorrect_questions"]
-    if not incorrect_cases:
-        return {
-            "status": "no_incorrect_questions",
-            "agent1_output": agent1_out,
-            "agent2_output": agent2_out,
-        }
+    all_correct = not incorrect_cases
     print(f"Agent 2 completed successfully in {time.perf_counter() - t_agent2:.2f}s")
 
-    # ---------------- Agent 3 ----------------
-    t_agent3 = time.perf_counter()
-    weaknesses_llm = extract_weaknesses_and_patterns(incorrect_cases)
-    if not weaknesses_llm:
-        return {
-            "status": "no_weaknesses",
-            "agent1_output": agent1_out,
-            "agent2_output": agent2_out,
-            "weaknesses_raw": [],
-        }  
-    print(f"Agent 3:WeaknessExtraction completed successfully in {time.perf_counter() - t_agent3:.2f}s")
+    weaknesses_llm = []
+    course_rec_output = {"weaknesses": [], "recommendations": []}
 
-    # ---------------- Agent 4 ----------------
-    t_agent4 = time.perf_counter()
-    course_rec_output = None
-    try:
-        print("Agent 4 – vector search recommendation...")
-        course_rec_output = recommend_courses_for_student(
-            weaknesses_raw=weaknesses_llm,
-            max_courses_pr_weakness=max_courses,
-        )
-        print(f"Agent 4 completed vector search successfully in {time.perf_counter() - t_agent4:.2f}s")
-    except Exception as e:
-        print(e)
-        print(f"[WARN] Vector search failed: {e}")
+    if not all_correct:
+        # ---------------- Agent 3 ----------------
+        t_agent3 = time.perf_counter()
+        weaknesses_llm = extract_weaknesses_and_patterns(incorrect_cases)
+        if not weaknesses_llm:
+            return {
+                "status": "no_weaknesses",
+                "agent1_output": agent1_out,
+                "agent2_output": agent2_out,
+                "weaknesses_raw": [],
+            }  
+        print(f"Agent 3:WeaknessExtraction completed successfully in {time.perf_counter() - t_agent3:.2f}s")
+
+        # ---------------- Agent 4 ----------------
+        t_agent4 = time.perf_counter()
+        course_rec_output = None
+        try:
+            print("Agent 4 – vector search recommendation...")
+            course_rec_output = recommend_courses_for_student(
+                weaknesses_raw=weaknesses_llm,
+                max_courses_pr_weakness=max_courses,
+            )
+            print(f"Agent 4 completed vector search successfully in {time.perf_counter() - t_agent4:.2f}s")
+        except Exception as e:
+            print(e)
+            print(f"[WARN] Vector search failed: {e}")
 
     # ---------------- Agent 5 ----------------
     t_agent5 = time.perf_counter()
-    if not course_rec_output or not course_rec_output.get("recommendations"):
+    if not all_correct and (not course_rec_output or not course_rec_output.get("recommendations")):
         print("[WARN] No course recommendations available for LLM summary.")
         return {
             "status": "no_course_recommendations",
@@ -138,15 +138,27 @@ def run_full_pipeline(
     result = generate_user_facing_response(
         weaknesses=weaknesses,
         recommendations=recommendations,
+        test_result=agent1_out.get("current_test_result"),
+        history_result=agent1_out.get("history_test_result"),
+        incorrect_summary={
+            "total_questions_in_test": agent2_out.get("total_questions_in_test"),
+            "total_incorrect_questions": agent2_out.get("total_incorrect_questions"),
+            "notes": agent2_out.get("notes"),
+            "status": agent2_out.get("status"),
+        },
+        all_correct=all_correct,
+        participant_ranking=participant_ranking,
+        domain_performance=agent2_out.get("domain_performance"),
     )
     print(f"Agent 5 completed successfully in {time.perf_counter() - t_agent5:.2f}s")
 
     return {
-        "status": "ok",
+        "status": "ok" if not all_correct else "ok_all_correct",
         "agent1_output": agent1_out,
         "agent2_output": agent2_out,
         "weaknesses_llm": weaknesses_llm,
         "course_recommendation": course_rec_output,
+        "participant_ranking": participant_ranking,
         "final_response": result,
     }
 
@@ -160,6 +172,7 @@ if __name__ == "__main__":
         test_id=TEST_ID,
         student_id=STUDENT_ID,
         max_courses=MAX_COURSES,
+        participant_ranking=PARTICIPANT_RANKING,
     )
 
     print(result)

@@ -11,6 +11,7 @@ from config import (
     MAX_COURSES,
     STUDENT_ID,
     TEST_ID,
+    PARTICIPANT_RANKING,
 )
 from pipeline.run_pipeline import run_full_pipeline
 
@@ -26,6 +27,10 @@ class PipelineRequest(BaseModel):
         default=MAX_COURSES,
         ge=1,
         description="Maximum courses retrieved per weakness.",
+    )
+    participant_ranking: float | None = Field(
+        default=PARTICIPANT_RANKING,
+        description="Optional fractional ranking (e.g., 0.317 => top 31.7%). Only provided when cohort >= 100.",
     )
 
 
@@ -138,6 +143,7 @@ def run_pipeline_v1(
             test_id=request.test_id,
             student_id=request.student_id,
             max_courses=request.max_courses,
+            participant_ranking=request.participant_ranking,
         )
         # Map known pipeline statuses to HTTP codes.
         status = result.get("status")

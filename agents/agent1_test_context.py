@@ -12,7 +12,6 @@ CORE_COLS = [
     "userId",
     "attemptNumber",
     "totalAttempts",
-    "durationTakenMs",  
     "earnedScore",
     "totalScore",
     "status",
@@ -84,12 +83,12 @@ def get_student_test_history(
         current_row[CORE_COLS].to_dict()
     )
 
-    # one previous attempts = history
-
-    history_row = df_student_test_sorted.iloc[1:2]
-    result["history_test_result"] = _serialize_record(
-        history_row[CORE_COLS].to_dict()
-    )
+    # One previous attempt = history (if present)
+    if len(df_student_test_sorted) > 1:
+        history_row = df_student_test_sorted.iloc[1]
+        result["history_test_result"] = _serialize_record(
+            history_row[CORE_COLS].to_dict()
+        )
 
     if not result["history_test_result"]:
         result["notes"].append(

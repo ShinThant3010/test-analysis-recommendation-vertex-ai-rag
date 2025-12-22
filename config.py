@@ -4,13 +4,13 @@ from google import genai
 from dotenv import load_dotenv
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from pathlib import Path
 
 load_dotenv()
 
 MAX_COURSES = 5
-PARTICIPANT_RANKING = 0.325  # Top 32.5%
+PARTICIPANT_RANKING: Optional[float] = None  # Fractional ranking (0.317 => top 31.7%). Optional.
 
 # ==== CSV PATHS ====
 dataset = "_data/exam_result"
