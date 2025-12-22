@@ -32,8 +32,9 @@ router_v1 = APIRouter(prefix="/api/v1", tags=["v1"])
 
 def require_headers(
     response: Response,
-    x_api_version: str = Header(..., alias="X-API-Version"),
+    x_api_version: str | None = Header(None, alias="X-API-Version"),
     x_correlation_id: str | None = Header(None, alias="X-Correlation-Id"),
+    content_type: str | None = Header(None, alias="Content-Type"),
 ) -> Dict[str, str]:
     """
     Enforce required API headers and propagate correlation id.
@@ -41,14 +42,27 @@ def require_headers(
     correlation_id = x_correlation_id or f"corr_{uuid.uuid4()}"
     response.headers["X-Correlation-Id"] = correlation_id
 
-    if x_api_version != "1":
+    version = x_api_version or "1"
+    if version != "1":
         detail = {
             "code": "INVALID_FIELD_VALUE",
-            "message": f"Unsupported X-API-Version: {x_api_version}",
+            "message": f"Unsupported X-API-Version: {version}",
             "correlation_id": correlation_id,
         }
         raise HTTPException(
             status_code=400,
+            detail=detail,
+            headers={"X-Correlation-Id": correlation_id},
+        )
+
+    if content_type and not content_type.lower().startswith("application/json"):
+        detail = {
+            "code": "INVALID_CONTENT_TYPE",
+            "message": f"Content-Type must be application/json, got: {content_type}",
+            "correlation_id": correlation_id,
+        }
+        raise HTTPException(
+            status_code=415,
             detail=detail,
             headers={"X-Correlation-Id": correlation_id},
         )
