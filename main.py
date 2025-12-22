@@ -140,7 +140,7 @@ def run_pipeline_v1(
         if status == "agent1_error":
             status_code = 404
         elif status == "no_course_recommendations":
-            status_code = 502
+            status_code = 200
         elif status == "agent2_error":
             status_code = 404
         elif status == "no_incorrect_questions":
