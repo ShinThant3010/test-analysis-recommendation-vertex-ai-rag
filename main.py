@@ -105,7 +105,7 @@ def health() -> Dict[str, str]:
 
 
 @router_v1.post(
-    "/test-analysis-recommendation",
+    "/test-analysis-recommendations",
     summary="Execute test analysis and course recommendation pipeline (v1)",
     description="Runs the full multi-agent pipeline to analyze test results, extract weaknesses, and return course recommendations.",
 )

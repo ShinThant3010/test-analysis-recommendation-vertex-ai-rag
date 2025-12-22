@@ -10,15 +10,16 @@ from pathlib import Path
 load_dotenv()
 
 MAX_COURSES = 5
+PARTICIPANT_RANKING = 0.325  # Top 32.5%
 
 # ==== CSV PATHS ====
-# dataset = "_data/exam_result"
-# TEST_ID = "01KCXGG0SS0001H0Q1FW1K4S0G"
-# STUDENT_ID = "STUDENT_A"
+dataset = "_data/exam_result"
+TEST_ID = "01KCXGG0SS0001H0Q1FW1K4S0G"
+STUDENT_ID = "STUDENT_A"
 
-dataset = "_data/data_cs"
-TEST_ID = "5JQC42EJ5E6RHXQAQPDH4AFAXR"
-STUDENT_ID = "E1CTEWH0AVNH9DN65R6PPG2X7R"
+# dataset = "_data/data_cs"
+# TEST_ID = "5JQC42EJ5E6RHXQAQPDH4AFAXR"
+# STUDENT_ID = "E1CTEWH0AVNH9DN65R6PPG2X7R"
 
 # dataset = "_data/data_general_logical"
 # TEST_ID = "5JQC42EJ5E6RHXQAQPDH4AFAXR"
