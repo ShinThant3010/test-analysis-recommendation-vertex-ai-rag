@@ -31,7 +31,7 @@ This API analyzes a student’s test results, identifies learning weaknesses usi
 
 ## Guideline Alignment Notes
 
-* ✅ **Resource-based URL:** canonical noun is `/api/v1/test-analysis-recommendation`
+* ✅ **Resource-based URL:** canonical noun is `/api/v1/test-analysis-recommendations`
 * ✅ **HTTP methods:** `GET` for health, `POST` for synchronous analysis runs
 * ✅ **HTTP status codes:** `200 OK` success, `4xx` validation/not-found, `5xx` pipeline errors
 * ✅ **Error format:** `{code,message,subErrors,timestamp,correlationId}`
@@ -88,7 +88,7 @@ Header versioning complements `/api/v1/...`.
 * `GET /health` 
 
 ### Test Analysis Pipeline
-* `POST /api/v1/test-analysis-recommendation` 
+* `POST /api/v1/test-analysis-recommendations` 
 ---
 
 ## 1) Health Endpoints
@@ -108,7 +108,7 @@ Header versioning complements `/api/v1/...`.
 
 ## 2) Run Test Analysis & Course Recommendation (REST)
 
-### POST /api/v1/test-analysis-recommendation
+### POST /api/v1/test-analysis-recommendations
 
 Runs the entire Vertex-AI-powered agent pipeline:
 
@@ -304,7 +304,7 @@ Body (camelCase):
 
 ```bash
 curl -X 'POST' \
-  'https://test-analysis-recommendation-service-810737581373.asia-southeast1.run.app/api/v1/test-analysis-recommendation' \
+  'https://test-analysis-recommendation-service-810737581373.asia-southeast1.run.app/api/v1/test-analysis-recommendations' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
