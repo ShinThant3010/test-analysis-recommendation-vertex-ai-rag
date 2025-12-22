@@ -1,6 +1,7 @@
 from typing import Any, Dict
+import uuid
 
-from fastapi import FastAPI, HTTPException, APIRouter
+from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Response
 from pydantic import BaseModel, Field
 
 from config import (
@@ -29,17 +30,52 @@ app = FastAPI(
 router_v1 = APIRouter(prefix="/api/v1", tags=["v1"])
 
 
+def require_headers(
+    response: Response,
+    x_api_version: str = Header(..., alias="X-API-Version"),
+    x_correlation_id: str | None = Header(None, alias="X-Correlation-Id"),
+) -> Dict[str, str]:
+    """
+    Enforce required API headers and propagate correlation id.
+    """
+    correlation_id = x_correlation_id or f"corr_{uuid.uuid4()}"
+    response.headers["X-Correlation-Id"] = correlation_id
+
+    if x_api_version != "1":
+        detail = {
+            "code": "INVALID_FIELD_VALUE",
+            "message": f"Unsupported X-API-Version: {x_api_version}",
+            "correlation_id": correlation_id,
+        }
+        raise HTTPException(
+            status_code=400,
+            detail=detail,
+            headers={"X-Correlation-Id": correlation_id},
+        )
+
+    return {"correlation_id": correlation_id}
+
+
 @app.get("/health")
 def health() -> Dict[str, str]:
     """Simple health-check endpoint."""
-    return {"status": "ok"}
+    health_check = {
+        "status": "ok",
+        "service": "test_analysis_recommendation_api",
+        "environment": "prod"
+        }
+    return health_check
 
 
 @router_v1.post("/test-analysis-recommendation")
-def run_pipeline_v1(request: PipelineRequest) -> Dict[str, Any]:
+def run_pipeline_v1(
+    request: PipelineRequest,
+    context: Dict[str, str] = Depends(require_headers),
+) -> Dict[str, Any]:
     """
     Execute the LLM pipeline using the supplied parameters.
     """
+    correlation_id = context["correlation_id"]
     try:
         result = run_full_pipeline(
             test_id=request.test_id,
@@ -49,9 +85,14 @@ def run_pipeline_v1(request: PipelineRequest) -> Dict[str, Any]:
     except Exception as exc:  # pragma: no cover - defensive guardrail
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to run pipeline: {exc}",
+            detail={
+                "code": "INTERNAL_ERROR",
+                "message": f"Failed to run pipeline: {exc}",
+                "correlation_id": correlation_id,
+            },
+            headers={"X-Correlation-Id": correlation_id},
         ) from exc
-    return result
+    return {"correlation_id": correlation_id, "data": result}
 
 
 app.include_router(router_v1)
