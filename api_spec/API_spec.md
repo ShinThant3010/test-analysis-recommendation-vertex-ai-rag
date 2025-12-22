@@ -25,7 +25,7 @@ This API analyzes a student’s test results, identifies learning weaknesses usi
 `http://127.0.0.1:8000`
 
 **Swagger / OpenAPI:**
-`https://test-analysis-recommendation-service-810737581373.asia-southeast1.run.app/docs`
+[https://test-analysis-recommendation-service-810737581373.asia-southeast1.run.app/docs](https://test-analysis-recommendation-service-810737581373.asia-southeast1.run.app/docs)
 
 ---
 
@@ -35,16 +35,14 @@ This API analyzes a student’s test results, identifies learning weaknesses usi
 * ✅ **HTTP methods:** `GET` for health, `POST` for synchronous analysis runs
 * ✅ **HTTP status codes:** `200 OK` success, `4xx` validation/not-found, `5xx` pipeline errors
 * ✅ **Error format:** `{code,message,subErrors,timestamp,correlationId}`
-* [TBD] **Correlation ID:** `X-Correlation-Id` passthrough + auto-generation
-* [TBD] **API Version header:** `X-API-Version` (default `1`)
+* ✅ **Correlation ID:** `X-Correlation-Id` passthrough + auto-generation
+* ✅ **API Version header:** `X-API-Version` (default `1`)
 * [TBD] **JSON naming:** responses are **camelCase**; requests accept camelCase **and** snake_case
 * ✅ **Idempotent inputs:** pipeline deduplicates by `(testId, studentId)` while still treating each request as a fresh run
 
 ---
 
-## Authentication & Authorization
-
-**[In Progress — not enforced yet]**
+## [TBD] Authentication & Authorization
 
 ### External Gateway (Bearer JWT)
 
@@ -55,7 +53,6 @@ This API analyzes a student’s test results, identifies learning weaknesses usi
 `X-API-Key: <internal key>`
 
 ### Recommended Gateway → Upstream Header Mapping
-**[In Progress — not implemented yet]**
 * `X-User-Id: <jwt.sub>`
 * `X-User-Name: <jwt.name>`
 * `X-User-Email: <jwt.email>`
@@ -125,6 +122,7 @@ Runs the entire Vertex-AI-powered agent pipeline:
 
 * `200 OK` — pipeline completed successfully (even if some agents produced warnings, e.g., no prior attempts)
 * `400 Bad Request` — request validation or unsupported API version
+* `401 Unauthorized`
 * `404 Not Found` — upstream resource missing (student_id, test_id, question_id, answer_id)
 * `409 Conflict` — duplicate request detected while a prior run with the same correlation ID is still in-flight
 * `500 Internal Server Error` — unexpected agent failure
@@ -306,7 +304,7 @@ Body (camelCase):
 
 ```bash
 curl -X 'POST' \
-  'https://test-analysis-recommendation-service-810737581373.asia-southeast1.run.app/test-analysis-recommendation' \
+  'https://test-analysis-recommendation-service-810737581373.asia-southeast1.run.app/api/v1/test-analysis-recommendation' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -399,5 +397,5 @@ Thrown for unexpected exceptions (e.g., Gemini quota, data read failure). Logs i
 ## 6) Change Log
 
 * **2025-01-19**: Initial specification drafted.
-
+* **2025-01-22**: Implemented status code, correlation-id, and header api-versioning.
 ---
