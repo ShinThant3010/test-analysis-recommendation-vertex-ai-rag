@@ -39,10 +39,10 @@ router_v1 = APIRouter(prefix="/api/v1", tags=["v1"])
 
 def require_headers(
     response: Response,
-    x_api_version: str | None = Header(None, alias="X-API-Version"),
-    x_correlation_id: str | None = Header(None, alias="X-Correlation-Id"),
-    content_type: str | None = Header(None, alias="Content-Type"),
-    authorization: str | None = Header(None, alias="Authorization"),
+    x_api_version: str | None = Header(None, alias="X-API-Version", include_in_schema=False),
+    x_correlation_id: str | None = Header(None, alias="X-Correlation-Id", include_in_schema=False),
+    content_type: str | None = Header(None, alias="Content-Type", include_in_schema=False),
+    authorization: str | None = Header(None, alias="Authorization", include_in_schema=False),
 ) -> Dict[str, str]:
     """
     Enforce required API headers and propagate correlation id.
