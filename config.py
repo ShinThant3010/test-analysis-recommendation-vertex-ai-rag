@@ -11,6 +11,7 @@ load_dotenv()
 
 MAX_COURSES = 5
 PARTICIPANT_RANKING: Optional[float] = None  # Fractional ranking (0.317 => top 31.7%). Optional.
+DEFAULT_LANGUAGE = "EN"  # Output language for final summary (EN or TH)
 
 # ==== CSV PATHS ====
 dataset = "_data/exam_result"

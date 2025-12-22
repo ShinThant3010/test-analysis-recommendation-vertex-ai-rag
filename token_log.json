@@ -124,5 +124,17 @@
     "input token": 701,
     "output token": 338,
     "runtime": 11.5769
+  },
+  {
+    "usage": "agent3: weakness extraction",
+    "input token": 472,
+    "output token": 190,
+    "runtime": 6.0744
+  },
+  {
+    "usage": "agent5: user-facing response generation",
+    "input token": 1888,
+    "output token": 543,
+    "runtime": 18.3604
   }
 ]

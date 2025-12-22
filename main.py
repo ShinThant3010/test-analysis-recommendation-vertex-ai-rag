@@ -12,6 +12,7 @@ from config import (
     STUDENT_ID,
     TEST_ID,
     PARTICIPANT_RANKING,
+    DEFAULT_LANGUAGE,
 )
 from pipeline.run_pipeline import run_full_pipeline
 
@@ -31,6 +32,10 @@ class PipelineRequest(BaseModel):
     participant_ranking: float | None = Field(
         default=PARTICIPANT_RANKING,
         description="Optional fractional ranking (e.g., 0.317 => top 31.7%). Only provided when cohort >= 100.",
+    )
+    language: str = Field(
+        default=DEFAULT_LANGUAGE,
+        description="Output language for the final summary (e.g., EN or TH).",
     )
 
 
@@ -144,6 +149,7 @@ def run_pipeline_v1(
             student_id=request.student_id,
             max_courses=request.max_courses,
             participant_ranking=request.participant_ranking,
+            language=request.language,
         )
         # Map known pipeline statuses to HTTP codes.
         status = result.get("status")

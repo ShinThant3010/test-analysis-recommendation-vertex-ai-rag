@@ -22,6 +22,7 @@ def generate_user_facing_response(
     all_correct: bool = False,
     participant_ranking: Optional[float] = PARTICIPANT_RANKING,
     domain_performance: Optional[Dict[str, Any]] = None,
+    language: str = "EN",
 ) -> Dict[str, Any]:
     """
     Generate a narrative performance report. The model is allowed to infer the domain
@@ -59,6 +60,7 @@ def generate_user_facing_response(
     domain_perf_text = json.dumps(domain_performance or {}, ensure_ascii=False, indent=2)
     progress_heading = _progress_heading(test_result, history_result) or "N/A"
     test_title = _test_title(test_result, history_result) or "N/A"
+    language_text = language or "EN"
 
     # === JSON Prompt === #
     prompt = f"""
@@ -127,6 +129,7 @@ def generate_user_facing_response(
         - If domain performance includes both current and history, add a concise domain-wise comparison highlighting improvements or declines; otherwise omit or leave the array empty.
         - Include the test title at the start via the \"Test Title\" field.
         - If there is a previous attempt, set \"Progress Compared to Previous Test\" to the heading provided above; otherwise set it to an empty string.
+        - Respond in the requested language: {language_text} (supported: EN, TH). Keep JSON keys in English.
         - Return ONLY valid JSON (no code fences, no commentary).
         - The "Recommended Course" array must describe each provided course and how it supports the weaknesses.
         - Do not invent new courses or change their titles.

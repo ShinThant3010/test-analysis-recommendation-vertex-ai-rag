@@ -27,6 +27,7 @@ from config import (
     TEST_ID, 
     STUDENT_ID,
     MAX_COURSES,
+    PARTICIPANT_RANKING,
 )
 
 def log_call(func):
@@ -52,6 +53,7 @@ def run_full_pipeline(
     student_id: str,
     max_courses: int = 5,
     participant_ranking: float | None = None,
+    language: str = "EN",
 ) -> Dict[str, Any]:
 
     # ---------------- Agent 1 ----------------
@@ -149,6 +151,7 @@ def run_full_pipeline(
         all_correct=all_correct,
         participant_ranking=participant_ranking,
         domain_performance=agent2_out.get("domain_performance"),
+        language=language,
     )
     print(f"Agent 5 completed successfully in {time.perf_counter() - t_agent5:.2f}s")
 
@@ -159,6 +162,7 @@ def run_full_pipeline(
         "weaknesses_llm": weaknesses_llm,
         "course_recommendation": course_rec_output,
         "participant_ranking": participant_ranking,
+        "language": language,
         "final_response": result,
     }
 
@@ -173,6 +177,7 @@ if __name__ == "__main__":
         student_id=STUDENT_ID,
         max_courses=MAX_COURSES,
         participant_ranking=PARTICIPANT_RANKING,
+        language="EN",
     )
 
     print(result)
