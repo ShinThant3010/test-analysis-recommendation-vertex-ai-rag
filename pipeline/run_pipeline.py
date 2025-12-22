@@ -79,7 +79,7 @@ def run_full_pipeline(
         ta_path=TA_PATH,
     )
 
-    if agent2_out["status"] != "ok" or "no_incorrect_answers":
+    if agent2_out["status"] != "ok" and agent2_out["status"] != "no_incorrect_answers":
         return {
             "status": "agent2_error",
             "agent1_output": agent1_out,
