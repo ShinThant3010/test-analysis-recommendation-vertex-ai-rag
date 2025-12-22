@@ -104,7 +104,11 @@ def health() -> Dict[str, str]:
     return health_check
 
 
-@router_v1.post("/test-analysis-recommendation")
+@router_v1.post(
+    "/test-analysis-recommendation",
+    summary="Execute test analysis and course recommendation pipeline (v1)",
+    description="Runs the full multi-agent pipeline to analyze test results, extract weaknesses, and return course recommendations.",
+)
 def run_pipeline_v1(
     request: PipelineRequest,
     response: Response,
