@@ -41,8 +41,9 @@ def require_headers(
     """
     correlation_id = x_correlation_id or f"corr_{uuid.uuid4()}"
     response.headers["X-Correlation-Id"] = correlation_id
-
     version = x_api_version or "1"
+    response.headers["X-API-Version"] = version
+
     if version != "1":
         detail = {
             "code": "INVALID_FIELD_VALUE",
