@@ -1,8 +1,11 @@
 from typing import Any, Dict
+import os
 import uuid
+import threading
 
 from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Response
 from pydantic import BaseModel, Field
+from google.api_core.exceptions import GoogleAPIError
 
 from config import (
     MAX_COURSES,
@@ -10,6 +13,10 @@ from config import (
     TEST_ID,
 )
 from pipeline.run_pipeline import run_full_pipeline
+
+_active_correlation_ids: set[str] = set()
+_corr_lock = threading.Lock()
+API_BEARER_TOKEN = os.getenv("API_BEARER_TOKEN")
 
 
 class PipelineRequest(BaseModel):
@@ -35,6 +42,7 @@ def require_headers(
     x_api_version: str | None = Header(None, alias="X-API-Version"),
     x_correlation_id: str | None = Header(None, alias="X-Correlation-Id"),
     content_type: str | None = Header(None, alias="Content-Type"),
+    authorization: str | None = Header(None, alias="Authorization"),
 ) -> Dict[str, str]:
     """
     Enforce required API headers and propagate correlation id.
@@ -53,7 +61,7 @@ def require_headers(
         raise HTTPException(
             status_code=400,
             detail=detail,
-            headers={"X-Correlation-Id": correlation_id},
+            headers={"X-Correlation-Id": correlation_id, "X-API-Version": version},
         )
 
     if content_type and not content_type.lower().startswith("application/json"):
@@ -65,8 +73,22 @@ def require_headers(
         raise HTTPException(
             status_code=415,
             detail=detail,
-            headers={"X-Correlation-Id": correlation_id},
+            headers={"X-Correlation-Id": correlation_id, "X-API-Version": version},
         )
+
+    if API_BEARER_TOKEN:
+        expected = f"Bearer {API_BEARER_TOKEN}"
+        if authorization != expected:
+            detail = {
+                "code": "UNAUTHORIZED",
+                "message": "Invalid or missing Authorization header.",
+                "correlation_id": correlation_id,
+            }
+            raise HTTPException(
+                status_code=401,
+                detail=detail,
+                headers={"X-Correlation-Id": correlation_id, "X-API-Version": version},
+            )
 
     return {"correlation_id": correlation_id}
 
@@ -85,19 +107,69 @@ def health() -> Dict[str, str]:
 @router_v1.post("/test-analysis-recommendation")
 def run_pipeline_v1(
     request: PipelineRequest,
+    response: Response,
     context: Dict[str, str] = Depends(require_headers),
 ) -> Dict[str, Any]:
     """
     Execute the LLM pipeline using the supplied parameters.
     """
     correlation_id = context["correlation_id"]
+    # Enforce idempotency guard: reject duplicates while in-flight.
+    with _corr_lock:
+        if correlation_id in _active_correlation_ids:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "CONFLICT",
+                    "message": "Request with this correlation id is already processing.",
+                    "correlation_id": correlation_id,
+                },
+                headers={"X-Correlation-Id": correlation_id, "X-API-Version": response.headers.get("X-API-Version", "1")},
+            )
+        _active_correlation_ids.add(correlation_id)
+
+    status_code = 200
     try:
         result = run_full_pipeline(
             test_id=request.test_id,
             student_id=request.student_id,
             max_courses=request.max_courses,
         )
+        # Map known pipeline statuses to HTTP codes.
+        status = result.get("status")
+        if status == "agent1_error":
+            status_code = 404
+        elif status == "no_course_recommendations":
+            status_code = 502
+        elif status == "agent2_error":
+            status_code = 404
+        elif status == "no_incorrect_questions":
+            status_code = 200
+        elif status == "no_weaknesses":
+            status_code = 200
+        else:
+            status_code = 200
+
+    except HTTPException:
+        # Pass through pre-built HTTP exceptions.
+        with _corr_lock:
+            _active_correlation_ids.discard(correlation_id)
+        raise
+    except GoogleAPIError as exc:
+        with _corr_lock:
+            _active_correlation_ids.discard(correlation_id)
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "code": "UPSTREAM_UNAVAILABLE",
+                "message": f"Upstream dependency unavailable: {exc}",
+                "correlation_id": correlation_id,
+            },
+            headers={"X-Correlation-Id": correlation_id, "X-API-Version": response.headers.get("X-API-Version", "1")},
+        ) from exc
     except Exception as exc:  # pragma: no cover - defensive guardrail
+        with _corr_lock:
+            _active_correlation_ids.discard(correlation_id)
         raise HTTPException(
             status_code=500,
             detail={
@@ -105,8 +177,13 @@ def run_pipeline_v1(
                 "message": f"Failed to run pipeline: {exc}",
                 "correlation_id": correlation_id,
             },
-            headers={"X-Correlation-Id": correlation_id},
+            headers={"X-Correlation-Id": correlation_id, "X-API-Version": response.headers.get("X-API-Version", "1")},
         ) from exc
+    finally:
+        with _corr_lock:
+            _active_correlation_ids.discard(correlation_id)
+
+    response.status_code = status_code
     return {"correlation_id": correlation_id, "data": result}
 
 
