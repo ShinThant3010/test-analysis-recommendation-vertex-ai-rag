@@ -13,6 +13,7 @@ from config import (
     TEST_ID,
     PARTICIPANT_RANKING,
     DEFAULT_LANGUAGE,
+    COURSE_RERANK_ENABLED,
 )
 from pipeline.run_pipeline import run_full_pipeline
 
@@ -36,6 +37,10 @@ class PipelineRequest(BaseModel):
     language: str = Field(
         default=DEFAULT_LANGUAGE,
         description="Output language for the final summary (e.g., EN or TH).",
+    )
+    rerank_courses: bool = Field(
+        default=COURSE_RERANK_ENABLED,
+        description="Enable LLM reranking of vector-search course recommendations (slower).",
     )
 
 
@@ -150,6 +155,7 @@ def run_pipeline_v1(
             max_courses=request.max_courses,
             participant_ranking=request.participant_ranking,
             language=request.language,
+            rerank_courses=request.rerank_courses,
         )
         # Map known pipeline statuses to HTTP codes.
         status = result.get("status")

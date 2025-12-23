@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import csv
 import uuid
+import json
+import time
 from typing import Any, Dict, List
 
 from google.cloud import aiplatform
@@ -11,7 +13,6 @@ from google.cloud.aiplatform import MatchingEngineIndexEndpoint
 import vertexai
 from google import genai
 from google.genai.types import EmbedContentConfig
-
 
 from config import (
     COURSE_CSV_PATH,
@@ -22,6 +23,8 @@ from config import (
     ENDPOINT_DISPLAY_NAME,
     EMBEDDING_MODEL_NAME,
     EMBEDDING_DIMENSION,
+    GENERATION_MODEL,
+    client as llm_client,
     Course,
     Weakness,
     CourseScore,
@@ -96,6 +99,7 @@ def _query_vertex_index(query_text: str, limit: int) -> List[Any]:
 def recommend_courses_for_student(
     weaknesses_raw: List[Dict[str, Any]],
     max_courses_pr_weakness: int = 5,
+    rerank_enabled: bool = False,
 ) -> Dict[str, Any]:
     """
     Fast online path:
@@ -141,6 +145,12 @@ def recommend_courses_for_student(
     selected_recommendations = _select_final_courses(
         all_recommendations, max_total=5
     )
+
+    # Optional LLM re-ranking/validation layer
+    if rerank_enabled:
+        reranked = _llm_rerank_courses(weaknesses, selected_recommendations)
+        if reranked:
+            selected_recommendations = reranked
 
     response = {
         "weaknesses": weaknesses,
@@ -192,6 +202,91 @@ def _dedupe_by_course(recs: List[CourseScore]) -> List[CourseScore]:
         seen.add(cid)
         unique.append(rec)
     return unique
+
+
+def _llm_rerank_courses(
+    weaknesses: List[Weakness],
+    recommendations: List[CourseScore],
+    model: str = GENERATION_MODEL,
+    max_candidates_per_weakness: int = 4,
+) -> List[CourseScore]:
+    """
+    Uses LLM to validate and re-rank the vector-search recommendations.
+    Optimized to reduce tokens: prompt per-weakness with capped candidates.
+    Returns a new list sorted by LLM relevance score if successful; otherwise returns [].
+    """
+    if not recommendations:
+        return []
+
+    recs_by_weakness: Dict[str, List[CourseScore]] = {}
+    for rec in recommendations:
+        recs_by_weakness.setdefault(rec.weakness_id, []).append(rec)
+
+    # Sort each weakness bucket by current score and cap to reduce prompt size
+    for wid, recs in recs_by_weakness.items():
+        recs.sort(key=lambda r: r.score, reverse=True)
+        recs_by_weakness[wid] = recs[:max_candidates_per_weakness]
+
+    # Quick lookup for weakness text
+    weakness_lookup = {w.id: w.text for w in weaknesses}
+
+    rescored: List[CourseScore] = []
+
+    for wid, recs in recs_by_weakness.items():
+        weakness_text = weakness_lookup.get(wid) or ""
+        rec_lines = "\n".join(
+            f'- id="{r.course.id}", title="{r.course.lesson_title}"'
+            for r in recs
+        )
+        prompt = f"""
+            You are scoring courses for a single weakness.
+
+            Weakness:
+            "{weakness_text}"
+
+            Candidate courses (keep all, just score relevance 0-1):
+            {rec_lines}
+
+            Output JSON ONLY:
+            [
+              {{"course_id": "<id>", "relevance_score": <0-1>, "justification": "<very short>"}},
+              ...
+            ]
+            """
+        try:
+            response = llm_client.models.generate_content(
+                model=model,
+                contents=[{"parts": [{"text": prompt}]}],
+            )
+            raw = (response.text or "").strip()
+            raw = raw.replace("```json", "").replace("```", "").strip()
+            data = json.loads(raw)
+            if not isinstance(data, list):
+                continue
+            rec_lookup = {r.course.id: r for r in recs}
+            for item in data:
+                cid = item.get("course_id")
+                if cid not in rec_lookup:
+                    continue
+                base = rec_lookup[cid]
+                score = float(item.get("relevance_score", base.score))
+                justification = item.get("justification") or base.reason
+                rescored.append(
+                    CourseScore(
+                        course=base.course,
+                        weakness_id=base.weakness_id,
+                        score=score,
+                        reason=justification,
+                    )
+                )
+        except Exception as exc:
+            print(f"[WARN] LLM re-rank failed for weakness {wid}: {exc}")
+            # fall back to existing ordering for this weakness
+            rescored.extend(recs)
+
+    # Keep at most one per weakness in final top list, sorted by score
+    rescored.sort(key=lambda cs: cs.score, reverse=True)
+    return rescored
 
 
     # response = {

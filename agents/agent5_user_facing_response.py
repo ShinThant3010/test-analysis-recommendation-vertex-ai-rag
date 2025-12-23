@@ -185,12 +185,17 @@ def generate_user_facing_response(
             "course_title": cs.course.lesson_title,
             "target_weakness_id": cs.weakness_id,
             "explanation": cs.reason or "",
+            "course_link": cs.course.link,
         }
         for cs in recommendations
     ]
 
+    summary_json = _append_links_to_summary(summary_json, rec_list)
+    user_facing_paragraph = _summary_to_paragraph(summary_json)
+
     return {
         "summary": summary_json,
+        "user_facing_paragraph": user_facing_paragraph,
         "recommendations": rec_list,
     }
 
@@ -448,6 +453,59 @@ def _maybe_localize_congrats_area(language: str) -> str:
     if language == "TH":
         return "คุณทำได้เต็ม 100% ในครั้งนี้ รักษาความสม่ำเสมอด้วยการฝึกต่อเนื่อง."
     return "You achieved full accuracy on this attempt. Continue practicing to maintain your performance."
+
+
+def _summary_to_paragraph(summary: Dict[str, Any]) -> str:
+    """
+    Create a single readable paragraph from the summary dict for user-facing display.
+    """
+    if not summary:
+        return ""
+
+    title = summary.get("Test Title") or ""
+    perf = summary.get("Current Performance") or ""
+    area = summary.get("Area to be Improved") or ""
+    domain_cmp = summary.get("Domain Comparison") or []
+    progress = summary.get("Progress Compared to Previous Test") or ""
+    recs = summary.get("Recommended Course") or []
+
+    parts: List[str] = []
+    if title:
+        parts.append(f"[{title}]")
+    if perf:
+        parts.append(perf)
+    if area:
+        parts.append(area)
+    if progress:
+        parts.append(progress)
+    if domain_cmp:
+        parts.append("Domain notes: " + "; ".join(domain_cmp))
+    if recs:
+        parts.append("Recommended courses: " + "; ".join(recs))
+
+    return " ".join(parts).strip()
+
+
+def _append_links_to_summary(summary: Dict[str, Any], rec_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+    if not isinstance(summary, dict):
+        return summary
+    recs = summary.get("Recommended Course")
+    if not recs or not isinstance(recs, list):
+        return summary
+
+    rec_with_links = []
+    for i, rec_text in enumerate(recs):
+        link = rec_list[i].get("course_link") if i < len(rec_list) else None
+        title = rec_list[i].get("course_title") if i < len(rec_list) else None
+        if link:
+            if title and title not in rec_text:
+                rec_with_links.append(f"{rec_text} (link: {title} - {link})")
+            else:
+                rec_with_links.append(f"{rec_text} (link: {link})")
+        else:
+            rec_with_links.append(rec_text)
+    summary["Recommended Course"] = rec_with_links
+    return summary
 
 
 def _progress_heading(

@@ -54,6 +54,7 @@ def run_full_pipeline(
     max_courses: int = 5,
     participant_ranking: float | None = None,
     language: str = "EN",
+    rerank_courses: bool = False,
 ) -> Dict[str, Any]:
 
     # ---------------- Agent 1 ----------------
@@ -117,6 +118,7 @@ def run_full_pipeline(
             course_rec_output = recommend_courses_for_student(
                 weaknesses_raw=weaknesses_llm,
                 max_courses_pr_weakness=max_courses,
+                rerank_enabled=rerank_courses,
             )
             print(f"Agent 4 completed vector search successfully in {time.perf_counter() - t_agent4:.2f}s")
         except Exception as e:
@@ -165,6 +167,7 @@ def run_full_pipeline(
         "course_recommendation": course_rec_output,
         "participant_ranking": participant_ranking,
         "language": language,
+        "rerank_courses": rerank_courses,
         "final_response": result,
     }
 
@@ -180,6 +183,7 @@ if __name__ == "__main__":
         max_courses=MAX_COURSES,
         participant_ranking=PARTICIPANT_RANKING,
         language="EN",
+        rerank_courses=True,
     )
 
     print(result)
