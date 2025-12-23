@@ -53,6 +53,8 @@ def generate_user_facing_response(
         for cs in recommendations
     )
 
+    language_code = (language or "EN").strip().upper()
+
     test_result_text = json.dumps(test_result or {}, ensure_ascii=False, indent=2)
     history_result_text = json.dumps(history_result or {}, ensure_ascii=False, indent=2)
     incorrect_summary_text = json.dumps(incorrect_summary or {}, ensure_ascii=False, indent=2)
@@ -60,7 +62,7 @@ def generate_user_facing_response(
     domain_perf_text = json.dumps(domain_performance or {}, ensure_ascii=False, indent=2)
     progress_heading = _progress_heading(test_result, history_result) or "N/A"
     test_title = _test_title(test_result, history_result) or "N/A"
-    language_text = language or "EN"
+    language_text = language_code
 
     # === JSON Prompt === #
     prompt = f"""
@@ -130,6 +132,7 @@ def generate_user_facing_response(
         - Include the test title at the start via the \"Test Title\" field.
         - If there is a previous attempt, set \"Progress Compared to Previous Test\" to the heading provided above; otherwise set it to an empty string.
         - Respond in the requested language: {language_text} (supported: EN, TH). Keep JSON keys in English.
+        - LANGUAGE RULE: All value strings (not keys) must be written in {language_text}. If TH, use natural Thai phrasing; if EN, use English.
         - Return ONLY valid JSON (no code fences, no commentary).
         - The "Recommended Course" array must describe each provided course and how it supports the weaknesses.
         - Do not invent new courses or change their titles.
@@ -163,6 +166,7 @@ def generate_user_facing_response(
             domain_performance=domain_performance,
             progress_heading=_progress_heading(test_result, history_result),
             test_title=test_title,
+            language=language_text,
         )
     finally:
         elapsed = time.time() - start
@@ -213,7 +217,9 @@ def _fallback_summary(
     domain_performance: Optional[Dict[str, Any]] = None,
     progress_heading: str = "",
     test_title: str = "",
+    language: str = "EN",
 ) -> Dict[str, Any]:
+    lang = (language or "EN").strip().upper()
     current_perf_parts = []
     if test_result:
         current_perf_parts.append(_summarize_test_result(test_result, incorrect_summary))
@@ -244,13 +250,18 @@ def _fallback_summary(
 
     domain_comparison = _domain_improvement_summaries(domain_performance)
 
+    area_text = (
+        f"Priority focus areas include {weakness_titles}. Strengthening these abilities "
+        "will improve overall consistency."
+    )
+    current_perf = _maybe_localize_current(current_perf, lang)
+    area_text = _maybe_localize_area(area_text, lang, weakness_titles)
+    rec_sentences = _maybe_localize_recs(rec_sentences, lang)
+
     return {
         "Test Title": test_title or (test_result.get("testTitle") if test_result else ""),
         "Current Performance": current_perf,
-        "Area to be Improved": (
-            f"Priority focus areas include {weakness_titles}. Strengthening these abilities "
-            "will improve overall consistency."
-        ),
+        "Area to be Improved": area_text,
         "Recommended Course": rec_sentences,
         "Progress Compared to Previous Test": progress_heading if domain_comparison else "",
         "Domain Comparison": domain_comparison,
@@ -262,7 +273,9 @@ def _congrats_summary(
     history_result: Optional[Dict[str, Any]],
     ranking_sentence: str = "",
     progress_heading: str = "",
+    language: str = "EN",
 ) -> Dict[str, Any]:
+    lang = (language or "EN").strip().upper()
     perf_sentence = ""
     if test_result:
         perf_sentence = _summarize_test_result(test_result, incorrect_summary={"total_questions_in_test": None, "total_incorrect_questions": 0})
@@ -274,11 +287,12 @@ def _congrats_summary(
     )
     if not current_perf:
         current_perf = "Congratulations on answering every question correctly!"
+    current_perf = _maybe_localize_congrats(current_perf, lang)
 
     return {
         "Test Title": _test_title(test_result, history_result),
         "Current Performance": current_perf,
-        "Area to be Improved": "You achieved full accuracy on this attempt. Continue practicing to maintain your performance.",
+        "Area to be Improved": _maybe_localize_congrats_area(lang),
         "Recommended Course": [],
         "Progress Compared to Previous Test": "" if not progress_heading else progress_heading,
         "Domain Comparison": [],
@@ -404,6 +418,36 @@ def _domain_improvement_summaries(
             f"{domain}: {direction} by {delta:+.1f}% (from {hist_acc*100:.1f}% to {curr_acc*100:.1f}%)"
         )
     return summaries
+
+
+def _maybe_localize_current(text: str, language: str) -> str:
+    if language == "TH":
+        return text  # leave dynamic content; prompt should already be TH in primary path
+    return text
+
+
+def _maybe_localize_area(text: str, language: str, weakness_titles: str) -> str:
+    if language == "TH":
+        return f"ประเด็นที่ควรพัฒนา ได้แก่ {weakness_titles}. การเสริมทักษะเหล่านี้จะช่วยให้ผลงานสม่ำเสมอขึ้น."
+    return text
+
+
+def _maybe_localize_recs(recs: List[str], language: str) -> List[str]:
+    if language == "TH":
+        return recs  # keep course titles/reasons as-is; prompt handles TH in main path
+    return recs
+
+
+def _maybe_localize_congrats(text: str, language: str) -> str:
+    if language == "TH":
+        return "ขอแสดงความยินดี! คุณตอบถูกทุกข้อ."
+    return text
+
+
+def _maybe_localize_congrats_area(language: str) -> str:
+    if language == "TH":
+        return "คุณทำได้เต็ม 100% ในครั้งนี้ รักษาความสม่ำเสมอด้วยการฝึกต่อเนื่อง."
+    return "You achieved full accuracy on this attempt. Continue practicing to maintain your performance."
 
 
 def _progress_heading(

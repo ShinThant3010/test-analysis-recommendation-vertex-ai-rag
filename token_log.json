@@ -136,5 +136,77 @@
     "input token": 1888,
     "output token": 543,
     "runtime": 18.3604
+  },
+  {
+    "usage": "agent3: weakness extraction",
+    "input token": 472,
+    "output token": 158,
+    "runtime": 5.6863
+  },
+  {
+    "usage": "agent5: user-facing response generation",
+    "input token": 1943,
+    "output token": 516,
+    "runtime": 12.0163
+  },
+  {
+    "usage": "agent3: weakness extraction",
+    "input token": 472,
+    "output token": 162,
+    "runtime": 7.205
+  },
+  {
+    "usage": "agent5: user-facing response generation",
+    "input token": 1938,
+    "output token": 589,
+    "runtime": 17.706
+  },
+  {
+    "usage": "agent3: weakness extraction",
+    "input token": 472,
+    "output token": 154,
+    "runtime": 6.9665
+  },
+  {
+    "usage": "agent5: user-facing response generation",
+    "input token": 1949,
+    "output token": 503,
+    "runtime": 14.748
+  },
+  {
+    "usage": "agent3: weakness extraction",
+    "input token": 472,
+    "output token": 176,
+    "runtime": 7.2316
+  },
+  {
+    "usage": "agent5: user-facing response generation",
+    "input token": 1949,
+    "output token": 477,
+    "runtime": 11.6122
+  },
+  {
+    "usage": "agent3: weakness extraction",
+    "input token": 472,
+    "output token": 165,
+    "runtime": 6.2267
+  },
+  {
+    "usage": "agent5: user-facing response generation",
+    "input token": 1981,
+    "output token": 718,
+    "runtime": 18.8618
+  },
+  {
+    "usage": "agent3: weakness extraction",
+    "input token": 472,
+    "output token": 145,
+    "runtime": 5.5383
+  },
+  {
+    "usage": "agent5: user-facing response generation",
+    "input token": 1986,
+    "output token": 522,
+    "runtime": 18.3021
   }
 ]

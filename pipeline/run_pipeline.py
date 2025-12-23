@@ -153,6 +153,8 @@ def run_full_pipeline(
         domain_performance=agent2_out.get("domain_performance"),
         language=language,
     )
+
+    print("Response in : ", language)
     print(f"Agent 5 completed successfully in {time.perf_counter() - t_agent5:.2f}s")
 
     return {
