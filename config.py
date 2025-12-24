@@ -12,7 +12,7 @@ load_dotenv()
 MAX_COURSES = 5
 PARTICIPANT_RANKING: Optional[float] = None  # Fractional ranking (0.317 => top 31.7%). Optional.
 DEFAULT_LANGUAGE = "EN"  # Output language for final summary (EN or TH)
-COURSE_RERANK_ENABLED = False  # Optional LLM reranking after vector search (set True to enable)
+COURSE_RERANK_ENABLED = True  # Optional LLM reranking after vector search (set True to enable)
 
 # ==== CSV PATHS ====
 dataset = "_data/exam_result"
@@ -41,7 +41,8 @@ TQ_PATH       = dataset + "/ExamQuestionResult.csv"
 TA_PATH       = dataset + "/ExamAnswerResult.csv"
 TEST_RESULT_PATH = dataset + "/ExamResult.csv"
 COURSE_PATH      = "_data/courses/course.csv"
-TOKEN_LOG_PATH = os.getenv("TOKEN_LOG_PATH", "token_log.json")
+TOKEN_LOG_PATH = os.getenv("TOKEN_LOG_PATH", "_log/token_log.json")
+RUN_LOG_PATH = os.getenv("RUN_LOG_PATH", "_log/run_log.json")
 
 # ==== Generation Model ====
 GENERATION_MODEL = "gemini-2.5-flash"

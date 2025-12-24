@@ -4,6 +4,8 @@ import time
 from functools import wraps
 import sys
 import json
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict, Any
 
 # --- Ensure project root is on sys.path (works both locally & in Docker) ---
@@ -28,6 +30,11 @@ from config import (
     STUDENT_ID,
     MAX_COURSES,
     PARTICIPANT_RANKING,
+    RUN_LOG_PATH,
+    TOKEN_LOG_PATH,
+    Course,
+    CourseScore,
+    Weakness,
 )
 
 def log_call(func):
@@ -54,7 +61,7 @@ def run_full_pipeline(
     max_courses: int = 5,
     participant_ranking: float | None = None,
     language: str = "EN",
-    rerank_courses: bool = False,
+    rerank_courses: bool = True,
 ) -> Dict[str, Any]:
 
     # ---------------- Agent 1 ----------------
@@ -159,17 +166,106 @@ def run_full_pipeline(
     print("Response in : ", language)
     print(f"Agent 5 completed successfully in {time.perf_counter() - t_agent5:.2f}s")
 
+    status_val = "ok" if not all_correct else "ok_all_correct"
+    _write_run_log(
+        status=status_val,
+        agent1_output=agent1_out,
+        agent2_output=agent2_out,
+        weaknesses_llm=weaknesses_llm,
+        course_recommendation=course_rec_output,
+        participant_ranking=participant_ranking,
+        language=language,
+        rerank_courses=rerank_courses,
+        final_response=result,
+    )
+
     return {
-        "status": "ok" if not all_correct else "ok_all_correct",
-        "agent1_output": agent1_out,
-        "agent2_output": agent2_out,
-        "weaknesses_llm": weaknesses_llm,
-        "course_recommendation": course_rec_output,
-        "participant_ranking": participant_ranking,
-        "language": language,
-        "rerank_courses": rerank_courses,
-        "final_response": result,
+        "user_facing_paragraph": result.get("user_facing_paragraph", ""),
     }
+
+
+# --------------------------------------------------------------------
+# Logging helpers
+# --------------------------------------------------------------------
+def _write_run_log(**payload: Any) -> None:
+    """
+    Append a JSON entry with run metadata, agent outputs, final response, and token log snapshot.
+    """
+    log_file = Path(RUN_LOG_PATH)
+    run_entry_raw = {
+        "run_datetime": datetime.now(timezone.utc).isoformat(),
+        **payload,
+        "token_log": _read_token_log(),
+    }
+    run_entry = _simplify_for_json(run_entry_raw)
+    entries = _read_run_log_entries(log_file)
+    entries.append(run_entry)
+    log_file.write_text(json.dumps(entries, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _read_token_log() -> Any:
+    path = Path(TOKEN_LOG_PATH)
+    if not path.exists():
+        return []
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return []
+
+
+def _read_run_log_entries(log_file: Path) -> list[Any]:
+    if not log_file.exists():
+        return []
+    try:
+        return json.loads(log_file.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        # fallback: try JSONL-style each line
+        lines = [ln.strip() for ln in log_file.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        entries = []
+        for ln in lines:
+            try:
+                entries.append(json.loads(ln))
+            except Exception:
+                continue
+        return entries
+
+
+def _simplify_for_json(obj: Any) -> Any:
+    """
+    Recursively convert objects to JSON-serializable structures.
+    - Weakness -> dict with key fields
+    - Course/CourseScore -> dict
+    - Fallback -> string representation
+    """
+    if obj is None or isinstance(obj, (str, int, float, bool)):
+        return obj
+    if isinstance(obj, Weakness):
+        return {
+            "id": obj.id,
+            "text": obj.text,
+            "importance": obj.importance,
+            "metadata": obj.metadata,
+        }
+    if isinstance(obj, Course):
+        return {
+            "id": obj.id,
+            "lesson_title": obj.lesson_title,
+            "description": obj.description,
+            "link": obj.link,
+            "metadata": obj.metadata,
+        }
+    if isinstance(obj, CourseScore):
+        return {
+            "course": _simplify_for_json(obj.course),
+            "weakness_id": obj.weakness_id,
+            "score": obj.score,
+            "reason": obj.reason,
+        }
+    if isinstance(obj, dict):
+        return {k: _simplify_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple, set)):
+        return [_simplify_for_json(v) for v in obj]
+    return str(obj)
 
 
 # --------------------------------------------------------------------

@@ -1,0 +1,50 @@
+[
+  {
+    "usage": "agent3: weakness extraction",
+    "input token": 472,
+    "output token": 151,
+    "runtime": 4.7524
+  },
+  {
+    "usage": "agent5: user-facing response generation",
+    "input token": 1906,
+    "output token": 439,
+    "runtime": 10.8045
+  },
+  {
+    "usage": "agent3: weakness extraction",
+    "input token": 472,
+    "output token": 154,
+    "runtime": 5.3154
+  },
+  {
+    "usage": "agent5: user-facing response generation",
+    "input token": 1910,
+    "output token": 509,
+    "runtime": 10.0348
+  },
+  {
+    "usage": "agent3: weakness extraction",
+    "input token": 472,
+    "output token": 159,
+    "runtime": 5.9823
+  },
+  {
+    "usage": "agent5: user-facing response generation",
+    "input token": 1896,
+    "output token": 453,
+    "runtime": 18.7243
+  },
+  {
+    "usage": "agent3: weakness extraction",
+    "input token": 472,
+    "output token": 154,
+    "runtime": 6.2052
+  },
+  {
+    "usage": "agent5: user-facing response generation",
+    "input token": 1894,
+    "output token": 551,
+    "runtime": 13.4135
+  }
+]
