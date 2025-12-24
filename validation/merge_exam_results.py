@@ -40,7 +40,6 @@ def merge_exam_results(
             "questionId",
             "questionText",
             "studentAnswers",
-            "studentAnswersWithCorrectness",
             "correctAnswers",
             "allChoices",
             "answeredCorrectly",
@@ -57,10 +56,6 @@ def merge_exam_results(
             answers = answers_by_question_result.get(row.get("id"), [])
 
             student_answers = [a.get("answerValue") for a in answers]
-            student_answers_with_correctness = [
-                {"value": a.get("answerValue"), "isCorrect": _to_bool(a.get("isCorrect"))}
-                for a in answers
-            ]
             correct_answers = [
                 a["value"] for a in answer_lookup.get(question_id, []) if a.get("isCorrect")
             ]
@@ -77,9 +72,6 @@ def merge_exam_results(
                 "questionId": question_id,
                 "questionText": question.get("question"),
                 "studentAnswers": json.dumps(student_answers, ensure_ascii=False),
-                "studentAnswersWithCorrectness": json.dumps(
-                    student_answers_with_correctness, ensure_ascii=False
-                ),
                 "correctAnswers": json.dumps(correct_answers, ensure_ascii=False),
                 "allChoices": json.dumps(all_choices, ensure_ascii=False),
                 "answeredCorrectly": answered_correctly,
