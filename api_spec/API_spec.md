@@ -389,7 +389,7 @@ Thrown for unexpected exceptions (e.g., Gemini quota, data read failure). Logs i
 | --------- | ------- | ----- |
 | `vertexai.MatchingEngineIndexEndpoint` | Retrieves courses semantically similar to weaknesses | Uses `INDEX_ENDPOINT_NAME` + `ENDPOINT_DISPLAY_NAME` from `config.py` |
 | `google.genai` (`gemini-2.5-flash`) | Agents 3 & 5 LLM calls | Requires `GOOGLE_API_KEY` |
-| `token_logger.py` | Captures token usage + runtime for observability | Appends to `token_log.json` |
+| `run_logging.py` | Captures token usage + runtime for observability | Aggregated into `run_log.json` |
 | `agents.agent?_*` modules | Each agent is importable & testable independently | API composes them via `pipeline/run_pipeline.py` |
 
 ---

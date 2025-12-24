@@ -6,7 +6,7 @@ from typing import List
 import time
 from config import EMBEDDING_MODEL, client
 from chromadb.utils.embedding_functions import EmbeddingFunction
-from token_logger import log_token_usage, extract_token_counts
+from pipeline.run_logging import log_token_usage, extract_token_counts
 
 def embed_text(text: str) -> List[float]:
     """Embed text using Gemini embeddings."""

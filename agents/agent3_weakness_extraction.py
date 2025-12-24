@@ -7,7 +7,7 @@ import ulid
 import time
 
 from config import client, GENERATION_MODEL
-from token_logger import log_token_usage, extract_token_counts
+from pipeline.run_logging import log_token_usage, extract_token_counts
 
 
 def extract_weaknesses_and_patterns(

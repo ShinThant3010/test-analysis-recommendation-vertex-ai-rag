@@ -11,7 +11,7 @@ from config import (
     PARTICIPANT_RANKING,
 
 )
-from token_logger import log_token_usage, extract_token_counts
+from pipeline.run_logging import log_token_usage, extract_token_counts
 
 def generate_user_facing_response(
     weaknesses: List[Weakness],

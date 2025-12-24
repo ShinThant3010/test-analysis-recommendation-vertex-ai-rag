@@ -41,7 +41,6 @@ TQ_PATH       = dataset + "/ExamQuestionResult.csv"
 TA_PATH       = dataset + "/ExamAnswerResult.csv"
 TEST_RESULT_PATH = dataset + "/ExamResult.csv"
 COURSE_PATH      = "_data/courses/course.csv"
-TOKEN_LOG_PATH = os.getenv("TOKEN_LOG_PATH", "_log/token_log.json")
 RUN_LOG_PATH = os.getenv("RUN_LOG_PATH", "_log/run_log.json")
 
 # ==== Generation Model ====

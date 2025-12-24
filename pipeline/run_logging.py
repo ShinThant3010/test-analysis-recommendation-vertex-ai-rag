@@ -1,16 +1,18 @@
 """
-Simple helper to append token usage entries to ``token_log.json``.
-Each entry keeps the usage label, token counts, and runtime for a single activity.
+Lightweight run-scoped logging helpers for token usage.
+Agents append token stats here; pipeline reads once per run and writes to run_log.json.
 """
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List
 
-from config import TOKEN_LOG_PATH
+_token_entries: List[Dict[str, Any]] = []
 
-LOG_FILE = Path(TOKEN_LOG_PATH)
+
+def reset_token_log() -> None:
+    """Clear token log for a new pipeline run."""
+    _token_entries.clear()
 
 
 def log_token_usage(
@@ -19,17 +21,13 @@ def log_token_usage(
     output_tokens: int | None,
     runtime_seconds: float | None,
 ) -> None:
-    """
-    Append a token usage entry to ``token_log.json``.
-    Values default to zero when None is provided.
-    """
     entry = {
         "usage": usage,
-        "input token": input_tokens if input_tokens is not None else 0,
-        "output token": output_tokens if output_tokens is not None else 0,
+        "input_token": input_tokens if input_tokens is not None else 0,
+        "output_token": output_tokens if output_tokens is not None else 0,
         "runtime": round(runtime_seconds or 0.0, 4),
     }
-    _write_entry(entry)
+    _token_entries.append(entry)
 
 
 def extract_token_counts(response: Any) -> tuple[int | None, int | None]:
@@ -54,22 +52,9 @@ def extract_token_counts(response: Any) -> tuple[int | None, int | None]:
     return input_tokens, output_tokens
 
 
-def _read_existing_entries() -> list[dict[str, Any]]:
-    if not LOG_FILE.exists():
-        return []
-    try:
-        return json.loads(LOG_FILE.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return []
-
-
-def _write_entry(entry: dict[str, Any]) -> None:
-    entries = _read_existing_entries()
-    entries.append(entry)
-    LOG_FILE.write_text(
-        json.dumps(entries, indent=2, ensure_ascii=True),
-        encoding="utf-8",
-    )
+def get_token_entries() -> List[Dict[str, Any]]:
+    """Return a shallow copy of the token log entries for the current run."""
+    return list(_token_entries)
 
 
 def _get_value(usage_meta: Any, possible_keys: list[str]) -> int | None:

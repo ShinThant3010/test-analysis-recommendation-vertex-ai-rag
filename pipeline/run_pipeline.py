@@ -31,11 +31,11 @@ from config import (
     MAX_COURSES,
     PARTICIPANT_RANKING,
     RUN_LOG_PATH,
-    TOKEN_LOG_PATH,
     Course,
     CourseScore,
     Weakness,
 )
+from pipeline.run_logging import reset_token_log, get_token_entries
 
 def log_call(func):
     """Decorator that reports runtime for each function."""
@@ -63,6 +63,7 @@ def run_full_pipeline(
     language: str = "EN",
     rerank_courses: bool = True,
 ) -> Dict[str, Any]:
+    reset_token_log()
 
     # ---------------- Agent 1 ----------------
     t_agent1 = time.perf_counter()
@@ -195,22 +196,12 @@ def _write_run_log(**payload: Any) -> None:
     run_entry_raw = {
         "run_datetime": datetime.now(timezone.utc).isoformat(),
         **payload,
-        "token_log": _read_token_log(),
+        "token_log": get_token_entries(),
     }
     run_entry = _simplify_for_json(run_entry_raw)
     entries = _read_run_log_entries(log_file)
     entries.append(run_entry)
     log_file.write_text(json.dumps(entries, ensure_ascii=False, indent=2), encoding="utf-8")
-
-
-def _read_token_log() -> Any:
-    path = Path(TOKEN_LOG_PATH)
-    if not path.exists():
-        return []
-    try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return []
 
 
 def _read_run_log_entries(log_file: Path) -> list[Any]:
