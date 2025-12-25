@@ -9,6 +9,7 @@ from config import (
     Weakness,
     CourseScore,
     PARTICIPANT_RANKING,
+    MIN_RECOMMENDATION_SCORE,
 
 )
 from pipeline.run_logging import log_token_usage, extract_token_counts
@@ -23,6 +24,7 @@ def generate_user_facing_response(
     participant_ranking: Optional[float] = PARTICIPANT_RANKING,
     domain_performance: Optional[Dict[str, Any]] = None,
     language: str = "EN",
+    min_score: float = MIN_RECOMMENDATION_SCORE,
 ) -> Dict[str, Any]:
     """
     Generate a narrative performance report. The model is allowed to infer the domain
@@ -185,13 +187,17 @@ def generate_user_facing_response(
             "course_title": cs.course.lesson_title,
             "target_weakness_id": cs.weakness_id,
             "explanation": cs.reason or "",
+            "score": cs.score,
             "course_link": cs.course.link,
         }
         for cs in recommendations
     ]
 
-    summary_json = _append_links_to_summary(summary_json, rec_list)
-    user_facing_paragraph = _summary_to_paragraph(summary_json)
+    summary_json, rec_list_filtered = _filter_recommendations_by_score(
+        summary_json, rec_list, recommendations, min_score=min_score
+    )
+    summary_json = _append_links_to_summary(summary_json, rec_list_filtered)
+    user_facing_paragraph = _summary_to_paragraph(summary_json, rec_list_filtered)
 
     return {
         "summary": summary_json,
@@ -455,7 +461,7 @@ def _maybe_localize_congrats_area(language: str) -> str:
     return "You achieved full accuracy on this attempt. Continue practicing to maintain your performance."
 
 
-def _summary_to_paragraph(summary: Dict[str, Any]) -> str:
+def _summary_to_paragraph(summary: Dict[str, Any], rec_list: List[Dict[str, Any]]) -> str:
     """
     Create a single readable paragraph from the summary dict for user-facing display.
     """
@@ -506,6 +512,33 @@ def _append_links_to_summary(summary: Dict[str, Any], rec_list: List[Dict[str, A
             rec_with_links.append(rec_text)
     summary["Recommended Course"] = rec_with_links
     return summary
+
+
+def _filter_recommendations_by_score(
+    summary: Dict[str, Any],
+    rec_list: List[Dict[str, Any]],
+    recommendations: List[CourseScore],
+    min_score: float = 0.5,
+) -> tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    """
+    Filter out recommendations (and corresponding summary entries) with score < min_score.
+    """
+    if not rec_list or not recommendations:
+        return summary, rec_list
+
+    keep_indices = [i for i, cs in enumerate(recommendations) if cs.score >= min_score]
+    if len(keep_indices) == len(rec_list):
+        return summary, rec_list
+
+    filtered_rec_list = [rec_list[i] for i in keep_indices if i < len(rec_list)]
+
+    if isinstance(summary, dict):
+        recs = summary.get("Recommended Course")
+        if isinstance(recs, list):
+            filtered_recs = [recs[i] for i in keep_indices if i < len(recs)]
+            summary = dict(summary)
+            summary["Recommended Course"] = filtered_recs
+    return summary, filtered_rec_list
 
 
 def _progress_heading(

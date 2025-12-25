@@ -13,6 +13,7 @@ MAX_COURSES = 5
 PARTICIPANT_RANKING: Optional[float] = None  # Fractional ranking (0.317 => top 31.7%). Optional.
 DEFAULT_LANGUAGE = "EN"  # Output language for final summary (EN or TH)
 COURSE_RERANK_ENABLED = True  # Optional LLM reranking after vector search (set True to enable)
+MIN_RECOMMENDATION_SCORE = float(os.getenv("MIN_RECOMMENDATION_SCORE", 0.5))
 
 # ==== CSV PATHS ====
 dataset = "_data/exam_result"

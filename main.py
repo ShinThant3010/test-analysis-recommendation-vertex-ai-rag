@@ -14,6 +14,7 @@ from config import (
     PARTICIPANT_RANKING,
     DEFAULT_LANGUAGE,
     COURSE_RERANK_ENABLED,
+    MIN_RECOMMENDATION_SCORE,
 )
 from pipeline.run_pipeline import run_full_pipeline
 
@@ -41,6 +42,12 @@ class PipelineRequest(BaseModel):
     rerank_courses: bool = Field(
         default=COURSE_RERANK_ENABLED,
         description="Enable LLM reranking of vector-search course recommendations (slower).",
+    )
+    min_score: float = Field(
+        default=MIN_RECOMMENDATION_SCORE,
+        ge=0,
+        le=1,
+        description="Minimum course score to include in user-facing summary.",
     )
 
 
@@ -156,6 +163,7 @@ def run_pipeline_v1(
             participant_ranking=request.participant_ranking,
             language=request.language,
             rerank_courses=request.rerank_courses,
+            min_score=request.min_score,
         )
         # Map known pipeline statuses to HTTP codes.
         status = result.get("status")

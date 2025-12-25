@@ -31,6 +31,7 @@ from config import (
     MAX_COURSES,
     PARTICIPANT_RANKING,
     RUN_LOG_PATH,
+    MIN_RECOMMENDATION_SCORE,
     Course,
     CourseScore,
     Weakness,
@@ -62,6 +63,7 @@ def run_full_pipeline(
     participant_ranking: float | None = None,
     language: str = "EN",
     rerank_courses: bool = True,
+    min_score: float = 0.5,
 ) -> Dict[str, Any]:
     reset_token_log()
 
@@ -162,6 +164,7 @@ def run_full_pipeline(
         participant_ranking=participant_ranking,
         domain_performance=agent2_out.get("domain_performance"),
         language=language,
+        min_score=min_score,
     )
 
     print("Response in : ", language)
@@ -178,6 +181,7 @@ def run_full_pipeline(
         language=language,
         rerank_courses=rerank_courses,
         final_response=result,
+        min_score=min_score,
     )
 
     return {
@@ -271,6 +275,7 @@ if __name__ == "__main__":
         participant_ranking=PARTICIPANT_RANKING,
         language="EN",
         rerank_courses=True,
+        min_score=MIN_RECOMMENDATION_SCORE,
     )
 
     print(result)
